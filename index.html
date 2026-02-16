@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Трекер привычек</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .add-form input:focus {
+      border-color: #555;
+    }
+
+    .add-form button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .add-form button:hover {
+      background: #1d4ed8;
+    }
+
+    .week-nav {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      color: #999;
+    }
+
+    .week-nav button {
+      background: none;
+      border: 1px solid #333;
+      color: #ccc;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .week-nav button:hover { border-color: #555; }
+
+    .days-header {
+      display: grid;
+      grid-template-columns: 1fr repeat(7, 36px);
+      gap: 4px;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .days-header span {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #666;
+    }
+
+    .habit {
+      display: grid;
+      grid-template-columns: 1fr repeat(7, 36px);
+      gap: 4px;
+      align-items: center;
+      padding: 8px 4px;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .habit-name {
+      font-size: 0.9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #444;
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 2px;
+      line-height: 1;
+    }
+
+    .delete-btn:hover { color: #e53e3e; }
+
+    .day-cell {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: 1px solid #222;
+      background: #1a1a1a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .day-cell:hover { border-color: #444; }
+
+    .day-cell.checked {
+      background: #16a34a;
+      border-color: #16a34a;
+    }
+
+    .day-cell.today {
+      border-color: #2563eb;
+    }
+
+    .empty {
+      text-align: center;
+      color: #555;
+      margin-top: 60px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Трекер привычек</h1>
+
+    <form class="add-form" id="addForm">
+      <input type="text" id="habitInput" placeholder="Новая привычка..." maxlength="50" required>
+      <button type="submit">+</button>
+    </form>
+
+    <div class="week-nav">
+      <button id="prevWeek">&larr;</button>
+      <span id="weekLabel"></span>
+      <button id="nextWeek">&rarr;</button>
+    </div>
+
+    <div id="habitList"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'habits_data';
+    const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const MONTH_NAMES = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+    let weekOffset = 0;
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { habits: [] };
+      } catch {
+        return { habits: [] };
+      }
+    }
+
+    function save(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function getMonday(offset) {
+      const now = new Date();
+      const day = now.getDay();
+      const diff = (day === 0 ? -6 : 1 - day) + offset * 7;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diff);
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    }
+
+    function dateKey(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    function isToday(date) {
+      const today = new Date();
+      return dateKey(date) === dateKey(today);
+    }
+
+    function render() {
+      const data = load();
+      const monday = getMonday(weekOffset);
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return d;
+      });
+
+      const sunday = days[6];
+      document.getElementById('weekLabel').textContent =
+        `${monday.getDate()} ${MONTH_NAMES[monday.getMonth()]} — ${sunday.getDate()} ${MONTH_NAMES[sunday.getMonth()]}`;
+
+      const list = document.getElementById('habitList');
+
+      if (data.habits.length === 0) {
+        list.innerHTML = '<p class="empty">Добавьте первую привычку</p>';
+        return;
+      }
+
+      let html = '<div class="days-header"><span></span>';
+      days.forEach((d, i) => {
+        html += `<span>${DAY_NAMES[i]}</span>`;
+      });
+      html += '</div>';
+
+      data.habits.forEach((habit, hi) => {
+        html += '<div class="habit">';
+        html += `<div class="habit-name">
+          <button class="delete-btn" data-idx="${hi}">&times;</button>
+          ${escapeHtml(habit.name)}
+        </div>`;
+
+        days.forEach(d => {
+          const key = dateKey(d);
+          const checked = habit.checks && habit.checks.includes(key);
+          const todayClass = isToday(d) ? ' today' : '';
+          html += `<div class="day-cell${checked ? ' checked' : ''}${todayClass}"
+                        data-habit="${hi}" data-date="${key}"></div>`;
+        });
+
+        html += '</div>';
+      });
+
+      list.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    document.getElementById('addForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = document.getElementById('habitInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      const data = load();
+      data.habits.push({ name, checks: [] });
+      save(data);
+      input.value = '';
+      render();
+    });
+
+    document.getElementById('habitList').addEventListener('click', e => {
+      const cell = e.target.closest('.day-cell');
+      if (cell) {
+        const hi = parseInt(cell.dataset.habit);
+        const date = cell.dataset.date;
+        const data = load();
+        const habit = data.habits[hi];
+        if (!habit.checks) habit.checks = [];
+
+        const idx = habit.checks.indexOf(date);
+        if (idx === -1) {
+          habit.checks.push(date);
+        } else {
+          habit.checks.splice(idx, 1);
+        }
+        save(data);
+        render();
+        return;
+      }
+
+      const del = e.target.closest('.delete-btn');
+      if (del) {
+        const hi = parseInt(del.dataset.idx);
+        const data = load();
+        const name = data.habits[hi].name;
+        if (confirm(`Удалить "${name}"?`)) {
+          data.habits.splice(hi, 1);
+          save(data);
+          render();
+        }
+      }
+    });
+
+    document.getElementById('prevWeek').addEventListener('click', () => { weekOffset--; render(); });
+    document.getElementById('nextWeek').addEventListener('click', () => { weekOffset++; render(); });
+
+    render();
+  </script>
+</body>
+</html>
