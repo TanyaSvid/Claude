@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Трекер привычек</title>
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Streak">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Streak</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -410,7 +417,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Трекер привычек</h1>
+    <h1>Streak</h1>
 
     <form class="add-form" id="addForm">
       <input type="text" id="habitInput" placeholder="Новая привычка..." maxlength="40" required>
@@ -737,6 +744,11 @@
 
     // Init
     renderDashboard();
+
+    // PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
   </script>
 </body>
 </html>
