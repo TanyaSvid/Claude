@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Трекер привычек</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 1.6rem;
+      color: #e0e0e0;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #16213e;
+      color: #eee;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .add-form input::placeholder { color: #666; }
+    .add-form input:focus { border-color: #0f3460; }
+
+    .add-form button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #0f3460;
+      color: #eee;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .add-form button:hover { background: #1a4a7a; }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .date-nav button {
+      background: none;
+      border: 1px solid #333;
+      color: #aaa;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .date-nav button:hover { border-color: #0f3460; color: #eee; }
+
+    .date-nav span {
+      font-size: 1rem;
+      color: #ccc;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .habits-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .habit-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #16213e;
+      border-radius: 10px;
+      transition: background 0.15s;
+    }
+
+    .habit-item.done { background: #0f3460; }
+
+    .habit-check {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #555;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .habit-item.done .habit-check {
+      border-color: #4ecca3;
+      background: #4ecca3;
+    }
+
+    .habit-check::after {
+      content: '';
+      display: none;
+      width: 6px;
+      height: 12px;
+      border: solid #1a1a2e;
+      border-width: 0 2.5px 2.5px 0;
+      transform: rotate(45deg);
+      margin-bottom: 2px;
+    }
+
+    .habit-item.done .habit-check::after { display: block; }
+
+    .habit-name {
+      flex: 1;
+      font-size: 1rem;
+    }
+
+    .habit-streak {
+      font-size: 0.8rem;
+      color: #4ecca3;
+      white-space: nowrap;
+    }
+
+    .habit-delete {
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .habit-delete:hover { color: #e74c3c; }
+
+    .empty {
+      text-align: center;
+      color: #555;
+      padding: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Трекер привычек</h1>
+
+    <form class="add-form" id="addForm">
+      <input type="text" id="habitInput" placeholder="Новая привычка..." autocomplete="off">
+      <button type="submit">+</button>
+    </form>
+
+    <div class="date-nav">
+      <button id="prevDay">&larr;</button>
+      <span id="dateLabel"></span>
+      <button id="nextDay">&rarr;</button>
+    </div>
+
+    <ul class="habits-list" id="habitsList"></ul>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'habit_tracker';
+
+    function loadData() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { habits: [], log: {} };
+      } catch {
+        return { habits: [], log: {} };
+      }
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function formatDate(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function formatDateDisplay(date) {
+      const today = new Date();
+      const todayStr = formatDate(today);
+      const dateStr = formatDate(date);
+
+      if (dateStr === todayStr) return 'Сегодня';
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (dateStr === formatDate(yesterday)) return 'Вчера';
+
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function calcStreak(habitId, data, upToDate) {
+      let streak = 0;
+      const d = new Date(upToDate);
+      const todayKey = formatDate(d);
+
+      if (!data.log[todayKey] || !data.log[todayKey].includes(habitId)) {
+        d.setDate(d.getDate() - 1);
+      }
+
+      while (true) {
+        const key = formatDate(d);
+        if (data.log[key] && data.log[key].includes(habitId)) {
+          streak++;
+          d.setDate(d.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    let currentDate = new Date();
+    const data = loadData();
+
+    function render() {
+      const dateStr = formatDate(currentDate);
+      document.getElementById('dateLabel').textContent = formatDateDisplay(currentDate);
+
+      const list = document.getElementById('habitsList');
+
+      if (data.habits.length === 0) {
+        list.innerHTML = '<li class="empty">Добавьте первую привычку</li>';
+        return;
+      }
+
+      list.innerHTML = data.habits.map(h => {
+        const done = data.log[dateStr] && data.log[dateStr].includes(h.id);
+        const streak = calcStreak(h.id, data, new Date());
+        const streakText = streak > 0 ? `${streak} дн.` : '';
+        return `
+          <li class="habit-item ${done ? 'done' : ''}" data-id="${h.id}">
+            <div class="habit-check" data-action="toggle"></div>
+            <span class="habit-name">${escapeHtml(h.name)}</span>
+            <span class="habit-streak">${streakText}</span>
+            <button class="habit-delete" data-action="delete">&times;</button>
+          </li>`;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      const el = document.createElement('span');
+      el.textContent = str;
+      return el.innerHTML;
+    }
+
+    document.getElementById('addForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const input = document.getElementById('habitInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      data.habits.push({ id: Date.now().toString(), name });
+      saveData(data);
+      input.value = '';
+      render();
+    });
+
+    document.getElementById('habitsList').addEventListener('click', e => {
+      const item = e.target.closest('[data-action]');
+      if (!item) return;
+
+      const li = e.target.closest('.habit-item');
+      const id = li.dataset.id;
+      const dateStr = formatDate(currentDate);
+
+      if (item.dataset.action === 'toggle') {
+        if (!data.log[dateStr]) data.log[dateStr] = [];
+        const idx = data.log[dateStr].indexOf(id);
+        if (idx === -1) {
+          data.log[dateStr].push(id);
+        } else {
+          data.log[dateStr].splice(idx, 1);
+        }
+        saveData(data);
+        render();
+      }
+
+      if (item.dataset.action === 'delete') {
+        data.habits = data.habits.filter(h => h.id !== id);
+        Object.keys(data.log).forEach(key => {
+          data.log[key] = data.log[key].filter(hid => hid !== id);
+        });
+        saveData(data);
+        render();
+      }
+    });
+
+    document.getElementById('prevDay').addEventListener('click', () => {
+      currentDate.setDate(currentDate.getDate() - 1);
+      render();
+    });
+
+    document.getElementById('nextDay').addEventListener('click', () => {
+      currentDate.setDate(currentDate.getDate() + 1);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
