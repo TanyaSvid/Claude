@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.5s ease;
+        }
+
+        body.work {
+            background-color: #e74c3c;
+        }
+
+        body.short-break {
+            background-color: #27ae60;
+        }
+
+        body.long-break {
+            background-color: #2980b9;
+        }
+
+        .container {
+            text-align: center;
+            color: white;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            background: transparent;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: white;
+            font-weight: 600;
+        }
+
+        .timer-display {
+            font-size: 8rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-start {
+            background: white;
+            color: #333;
+        }
+
+        .btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .session-counter {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        @media (max-width: 480px) {
+            .timer-display {
+                font-size: 4.5rem;
+            }
+            .mode-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body class="work">
+    <div class="container">
+        <h1 id="status-text">Время работать!</h1>
+
+        <div class="mode-buttons">
+            <button class="mode-btn active" data-mode="work">Работа</button>
+            <button class="mode-btn" data-mode="short-break">Короткий перерыв</button>
+            <button class="mode-btn" data-mode="long-break">Длинный перерыв</button>
+        </div>
+
+        <div class="timer-display" id="timer">25:00</div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn">Старт</button>
+            <button class="btn btn-reset" id="resetBtn">Сброс</button>
+        </div>
+
+        <div class="session-counter" id="sessions">Завершено сессий: 0</div>
+    </div>
+
+    <script>
+        const MODES = {
+            'work':        { minutes: 25, label: 'Время работать!',   bodyClass: 'work' },
+            'short-break': { minutes: 5,  label: 'Короткий перерыв',  bodyClass: 'short-break' },
+            'long-break':  { minutes: 15, label: 'Длинный перерыв',   bodyClass: 'long-break' },
+        };
+
+        let currentMode = 'work';
+        let timeLeft = MODES[currentMode].minutes * 60;
+        let totalTime = timeLeft;
+        let timerInterval = null;
+        let isRunning = false;
+        let sessionsCompleted = 0;
+
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusText = document.getElementById('status-text');
+        const sessionsEl = document.getElementById('sessions');
+        const progressFill = document.getElementById('progress');
+        const modeButtons = document.querySelectorAll('.mode-btn');
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateDisplay() {
+            timerDisplay.textContent = formatTime(timeLeft);
+            document.title = `${formatTime(timeLeft)} — Pomodoro`;
+            const elapsed = totalTime - timeLeft;
+            const pct = totalTime > 0 ? (elapsed / totalTime) * 100 : 0;
+            progressFill.style.width = pct + '%';
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const config = MODES[mode];
+            timeLeft = config.minutes * 60;
+            totalTime = timeLeft;
+            statusText.textContent = config.label;
+            document.body.className = config.bodyClass;
+
+            modeButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            stopTimer();
+            updateDisplay();
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+            startBtn.textContent = 'Пауза';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    onTimerComplete();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.textContent = 'Старт';
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            startBtn.textContent = 'Старт';
+        }
+
+        function onTimerComplete() {
+            playSound();
+
+            if (currentMode === 'work') {
+                sessionsCompleted++;
+                sessionsEl.textContent = `Завершено сессий: ${sessionsCompleted}`;
+
+                if (sessionsCompleted % 4 === 0) {
+                    switchMode('long-break');
+                } else {
+                    switchMode('short-break');
+                }
+            } else {
+                switchMode('work');
+            }
+        }
+
+        function playSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const notes = [523.25, 659.25, 783.99];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.2);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.4);
+                    osc.start(ctx.currentTime + i * 0.2);
+                    osc.stop(ctx.currentTime + i * 0.2 + 0.4);
+                });
+            } catch (e) {
+                // Audio not supported — no problem
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            isRunning ? pauseTimer() : startTimer();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            switchMode(currentMode);
+        });
+
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchMode(btn.dataset.mode);
+            });
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
