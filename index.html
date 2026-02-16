@@ -66,83 +66,66 @@
     /* --- Dashboard: habit cards --- */
     .habit-card {
       background: #161616;
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 12px;
+      border-radius: 12px;
+      padding: 0 14px;
+      height: 48px;
+      margin-bottom: 8px;
       cursor: pointer;
       border: 1px solid #1e1e1e;
       transition: border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
 
     .habit-card:hover { border-color: #333; }
 
-    .habit-header {
+    .habit-left {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .habit-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
 
     .habit-title {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       font-weight: 600;
       color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .habit-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .habit-count {
+      font-size: 0.7rem;
+      color: #666;
     }
 
     .habit-streak {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: #888;
+      white-space: nowrap;
     }
 
     .habit-streak b {
       color: #ccc;
       font-weight: 600;
-    }
-
-    /* --- Tile grid (year heatmap) --- */
-    .tile-grid {
-      display: flex;
-      gap: 2px;
-      overflow: hidden;
-    }
-
-    .tile-week {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .tile {
-      width: 8px;
-      height: 8px;
-      border-radius: 2px;
-      background: #1e1e1e;
-    }
-
-    .tile.filled {
-      background: var(--habit-color, #2563eb);
-    }
-
-    .tile.today-tile {
-      outline: 1px solid #fff;
-      outline-offset: 0px;
-    }
-
-    .tile.future {
-      background: #131313;
-    }
-
-    /* --- Month labels row --- */
-    .month-labels {
-      display: flex;
-      margin-bottom: 3px;
-      font-size: 0.6rem;
-      color: #555;
-      padding-left: 0;
-    }
-
-    .month-labels span {
-      text-align: left;
     }
 
     /* --- Modal overlay --- */
@@ -194,7 +177,7 @@
       .color-dot { width: 20px; height: 20px; }
       .stat-box { padding: 6px 8px; }
       .stat-value { font-size: 1rem; }
-      .modal-title { font-size: 1rem; }
+      .edit-name { font-size: 1rem; }
     }
 
     @media (min-width: 600px) {
@@ -210,17 +193,11 @@
       }
     }
 
-    .modal-header {
+    .modal-top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .modal-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #fff;
+      margin-bottom: 12px;
     }
 
     .modal-actions {
@@ -250,6 +227,39 @@
     }
 
     .modal-delete:hover { color: #e53e3e; }
+
+    .edit-name {
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 1px solid #2a2a2a;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 4px 0;
+      margin-bottom: 8px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .edit-name:focus { border-bottom-color: #555; }
+
+    .edit-desc {
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 1px solid #1e1e1e;
+      color: #999;
+      font-size: 0.8rem;
+      padding: 4px 0;
+      margin-bottom: 14px;
+      outline: none;
+      font-family: inherit;
+      resize: none;
+    }
+
+    .edit-desc::placeholder { color: #444; }
+    .edit-desc:focus { border-bottom-color: #444; }
 
     /* --- Calendar in modal --- */
     .cal-nav {
@@ -412,13 +422,15 @@
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal" id="modal">
-      <div class="modal-header">
-        <span class="modal-title" id="modalTitle"></span>
+      <div class="modal-top-bar">
+        <span></span>
         <div class="modal-actions">
           <button class="modal-delete" id="modalDelete">Удалить</button>
           <button class="modal-close" id="modalClose">&times;</button>
         </div>
       </div>
+      <input type="text" class="edit-name" id="editName" maxlength="40" placeholder="Название">
+      <textarea class="edit-desc" id="editDesc" rows="1" maxlength="100" placeholder="Описание (необязательно)"></textarea>
       <div class="color-picker" id="colorPicker"></div>
       <div class="cal-nav">
         <button id="calPrev">&larr;</button>
@@ -498,69 +510,6 @@
       return checks ? checks.length : 0;
     }
 
-    // Build tile grid: last ~6 months of weeks
-    function buildTileGrid(habit) {
-      const color = habit.color || COLORS[0];
-      const checks = new Set(habit.checks || []);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tk = todayKey();
-
-      // Show ~26 weeks (half year)
-      const totalWeeks = 26;
-      // Find the Sunday of this week (end)
-      const endDay = new Date(today);
-      const dow = endDay.getDay();
-      endDay.setDate(endDay.getDate() + (dow === 0 ? 0 : 7 - dow));
-
-      // Start from totalWeeks ago, Monday
-      const startDay = new Date(endDay);
-      startDay.setDate(startDay.getDate() - totalWeeks * 7 + 1);
-
-      let html = '<div class="tile-grid" style="--habit-color:' + color + '">';
-
-      const cursor = new Date(startDay);
-      let weekHtml = '<div class="tile-week">';
-      // Pad first week if doesn't start on Monday
-      const firstDow = cursor.getDay();
-      const mondayOffset = firstDow === 0 ? 6 : firstDow - 1;
-      for (let p = 0; p < mondayOffset; p++) {
-        weekHtml += '<div class="tile future"></div>';
-      }
-
-      while (cursor <= endDay) {
-        const key = dateKey(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
-        const isFuture = cursor > today;
-        const isToday = key === tk;
-        const filled = checks.has(key);
-
-        let cls = 'tile';
-        if (isFuture) cls += ' future';
-        else if (filled) cls += ' filled';
-        if (isToday) cls += ' today-tile';
-
-        weekHtml += `<div class="${cls}"></div>`;
-
-        // If Sunday, close week and start new
-        if (cursor.getDay() === 0) {
-          weekHtml += '</div>';
-          html += weekHtml;
-          weekHtml = '<div class="tile-week">';
-        }
-
-        cursor.setDate(cursor.getDate() + 1);
-      }
-
-      // Close last partial week
-      if (weekHtml !== '<div class="tile-week">') {
-        weekHtml += '</div>';
-        html += weekHtml;
-      }
-
-      html += '</div>';
-      return html;
-    }
-
     // --- Dashboard ---
     function renderDashboard() {
       const data = load();
@@ -578,13 +527,14 @@
         const total = getTotalDays(habit.checks);
 
         html += `<div class="habit-card" data-idx="${idx}">`;
-        html += `<div class="habit-header">`;
+        html += `<div class="habit-left">`;
+        html += `<div class="habit-color-dot" style="background:${color}"></div>`;
         html += `<span class="habit-title">${escapeHtml(habit.name)}</span>`;
-        html += `<span class="habit-streak">`;
-        if (streak > 0) html += `<b>${streak}</b> дн подряд`;
-        else html += `${total} дн всего`;
-        html += `</span></div>`;
-        html += buildTileGrid(habit);
+        html += `</div>`;
+        html += `<div class="habit-right">`;
+        html += `<span class="habit-count">${total} дн</span>`;
+        if (streak > 0) html += `<span class="habit-streak"><b>${streak}</b> подряд</span>`;
+        html += `</div>`;
         html += '</div>';
       });
 
@@ -597,6 +547,10 @@
       const today = new Date();
       calMonth = today.getMonth();
       calYear = today.getFullYear();
+      const data = load();
+      const habit = data.habits[idx];
+      document.getElementById('editName').value = habit.name;
+      document.getElementById('editDesc').value = habit.description || '';
       renderCalendar();
       document.getElementById('modalOverlay').classList.add('open');
     }
@@ -619,7 +573,14 @@
       today.setHours(0, 0, 0, 0);
       const tk = todayKey();
 
-      document.getElementById('modalTitle').textContent = habit.name;
+      const nameInput = document.getElementById('editName');
+      const descInput = document.getElementById('editDesc');
+      if (nameInput.value !== habit.name && document.activeElement !== nameInput) {
+        nameInput.value = habit.name;
+      }
+      if ((descInput.value || '') !== (habit.description || '') && document.activeElement !== descInput) {
+        descInput.value = habit.description || '';
+      }
       document.getElementById('calLabel').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
 
       // Color picker
@@ -753,6 +714,25 @@
         save(data);
         closeModal();
       }
+    });
+
+    // Edit name
+    document.getElementById('editName').addEventListener('input', () => {
+      if (openHabitIdx === null) return;
+      const val = document.getElementById('editName').value.trim();
+      if (!val) return;
+      const data = load();
+      data.habits[openHabitIdx].name = val;
+      save(data);
+    });
+
+    // Edit description
+    document.getElementById('editDesc').addEventListener('input', () => {
+      if (openHabitIdx === null) return;
+      const val = document.getElementById('editDesc').value.trim();
+      const data = load();
+      data.habits[openHabitIdx].description = val || '';
+      save(data);
     });
 
     // Init
