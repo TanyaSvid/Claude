@@ -12,150 +12,351 @@
       background: #0f0f0f;
       color: #e0e0e0;
       min-height: 100vh;
-      padding: 20px;
+      padding: 16px;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .container {
-      max-width: 500px;
+      max-width: 480px;
       margin: 0 auto;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 24px;
-      font-size: 1.5rem;
+      margin-bottom: 20px;
+      font-size: 1.4rem;
       color: #fff;
+      font-weight: 600;
     }
 
+    /* --- Add form --- */
     .add-form {
       display: flex;
       gap: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .add-form input {
       flex: 1;
       padding: 10px 14px;
-      border: 1px solid #333;
-      border-radius: 8px;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
       background: #1a1a1a;
       color: #e0e0e0;
-      font-size: 1rem;
+      font-size: 0.95rem;
       outline: none;
     }
 
-    .add-form input:focus {
-      border-color: #555;
-    }
+    .add-form input:focus { border-color: #444; }
+    .add-form input::placeholder { color: #555; }
 
     .add-form button {
       padding: 10px 18px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #2563eb;
       color: #fff;
-      font-size: 1rem;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .add-form button:hover { background: #1d4ed8; }
+
+    /* --- Dashboard: habit cards --- */
+    .habit-card {
+      background: #161616;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      border: 1px solid #1e1e1e;
+      transition: border-color 0.15s;
+    }
+
+    .habit-card:hover { border-color: #333; }
+
+    .habit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .habit-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .habit-streak {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .habit-streak b {
+      color: #ccc;
+      font-weight: 600;
+    }
+
+    /* --- Tile grid (year heatmap) --- */
+    .tile-grid {
+      display: flex;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .tile-week {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tile {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: #1e1e1e;
+    }
+
+    .tile.filled {
+      background: var(--habit-color, #2563eb);
+    }
+
+    .tile.today-tile {
+      outline: 1px solid #fff;
+      outline-offset: 0px;
+    }
+
+    .tile.future {
+      background: #131313;
+    }
+
+    /* --- Month labels row --- */
+    .month-labels {
+      display: flex;
+      margin-bottom: 3px;
+      font-size: 0.6rem;
+      color: #555;
+      padding-left: 0;
+    }
+
+    .month-labels span {
+      text-align: left;
+    }
+
+    /* --- Modal overlay --- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      justify-content: center;
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #161616;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 20px;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: #fff; }
+
+    .modal-delete {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 0.8rem;
       cursor: pointer;
     }
 
-    .add-form button:hover {
-      background: #1d4ed8;
-    }
+    .modal-delete:hover { color: #e53e3e; }
 
-    .week-nav {
+    /* --- Calendar in modal --- */
+    .cal-nav {
       display: flex;
-      justify-content: center;
-      gap: 16px;
+      justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      font-size: 0.9rem;
-      color: #999;
+      margin-bottom: 12px;
     }
 
-    .week-nav button {
+    .cal-nav button {
       background: none;
-      border: 1px solid #333;
+      border: 1px solid #2a2a2a;
       color: #ccc;
-      padding: 4px 12px;
-      border-radius: 6px;
+      padding: 4px 14px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 0.85rem;
     }
 
-    .week-nav button:hover { border-color: #555; }
+    .cal-nav button:hover { border-color: #555; }
 
-    .days-header {
-      display: grid;
-      grid-template-columns: 1fr repeat(7, 36px);
-      gap: 4px;
-      margin-bottom: 8px;
-      padding: 0 4px;
+    .cal-month-label {
+      font-size: 0.95rem;
+      color: #ccc;
+      font-weight: 500;
     }
 
-    .days-header span {
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .cal-weekdays span {
       text-align: center;
-      font-size: 0.75rem;
-      color: #666;
+      font-size: 0.7rem;
+      color: #555;
+      padding: 4px 0;
     }
 
-    .habit {
+    .cal-grid {
       display: grid;
-      grid-template-columns: 1fr repeat(7, 36px);
+      grid-template-columns: repeat(7, 1fr);
       gap: 4px;
-      align-items: center;
-      padding: 8px 4px;
-      border-bottom: 1px solid #1a1a1a;
     }
 
-    .habit-name {
-      font-size: 0.9rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .delete-btn {
-      background: none;
-      border: none;
-      color: #444;
-      cursor: pointer;
-      font-size: 0.75rem;
-      padding: 2px;
-      line-height: 1;
-    }
-
-    .delete-btn:hover { color: #e53e3e; }
-
-    .day-cell {
-      width: 36px;
-      height: 36px;
-      border-radius: 6px;
-      border: 1px solid #222;
-      background: #1a1a1a;
-      cursor: pointer;
+    .cal-day {
+      aspect-ratio: 1;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s;
+      font-size: 0.8rem;
+      color: #666;
+      cursor: pointer;
+      background: #1a1a1a;
+      border: 1px solid transparent;
+      transition: background 0.12s;
+      user-select: none;
     }
 
-    .day-cell:hover { border-color: #444; }
+    .cal-day:hover { background: #252525; }
 
-    .day-cell.checked {
-      background: #16a34a;
-      border-color: #16a34a;
+    .cal-day.checked {
+      background: var(--habit-color, #2563eb);
+      color: #fff;
+      font-weight: 600;
     }
 
-    .day-cell.today {
-      border-color: #2563eb;
+    .cal-day.today-cal {
+      border-color: #fff;
     }
 
+    .cal-day.empty {
+      background: transparent;
+      cursor: default;
+    }
+
+    .cal-day.future-day {
+      color: #333;
+      background: #131313;
+      cursor: default;
+    }
+
+    /* --- Stats in modal --- */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      justify-content: center;
+    }
+
+    .stat-box {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: center;
+      flex: 1;
+    }
+
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: #666;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* --- Color picker --- */
+    .color-picker {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      justify-content: center;
+    }
+
+    .color-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    .color-dot.active {
+      border-color: #fff;
+    }
+
+    /* --- Empty state --- */
     .empty {
       text-align: center;
-      color: #555;
+      color: #444;
       margin-top: 60px;
       font-size: 0.95rem;
     }
@@ -166,110 +367,279 @@
     <h1>Трекер привычек</h1>
 
     <form class="add-form" id="addForm">
-      <input type="text" id="habitInput" placeholder="Новая привычка..." maxlength="50" required>
+      <input type="text" id="habitInput" placeholder="Новая привычка..." maxlength="40" required>
       <button type="submit">+</button>
     </form>
 
-    <div class="week-nav">
-      <button id="prevWeek">&larr;</button>
-      <span id="weekLabel"></span>
-      <button id="nextWeek">&rarr;</button>
-    </div>
+    <div id="dashboard"></div>
+  </div>
 
-    <div id="habitList"></div>
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle"></span>
+        <div class="modal-actions">
+          <button class="modal-delete" id="modalDelete">Удалить</button>
+          <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+      </div>
+      <div class="color-picker" id="colorPicker"></div>
+      <div class="cal-nav">
+        <button id="calPrev">&larr;</button>
+        <span class="cal-month-label" id="calLabel"></span>
+        <button id="calNext">&rarr;</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="stats-row" id="statsRow"></div>
+    </div>
   </div>
 
   <script>
-    const STORAGE_KEY = 'habits_data';
-    const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-    const MONTH_NAMES = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    const STORAGE_KEY = 'habits_data_v2';
+    const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const MONTH_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const COLORS = ['#2563eb','#16a34a','#dc2626','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316'];
 
-    let weekOffset = 0;
+    let openHabitIdx = null;
+    let calMonth = null;
+    let calYear = null;
 
     function load() {
       try {
         return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { habits: [] };
-      } catch {
-        return { habits: [] };
-      }
+      } catch { return { habits: [] }; }
     }
 
     function save(data) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
 
-    function getMonday(offset) {
-      const now = new Date();
-      const day = now.getDay();
-      const diff = (day === 0 ? -6 : 1 - day) + offset * 7;
-      const monday = new Date(now);
-      monday.setDate(now.getDate() + diff);
-      monday.setHours(0, 0, 0, 0);
-      return monday;
+    function dateKey(y, m, d) {
+      return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     }
 
-    function dateKey(date) {
-      return date.toISOString().split('T')[0];
-    }
-
-    function isToday(date) {
-      const today = new Date();
-      return dateKey(date) === dateKey(today);
-    }
-
-    function render() {
-      const data = load();
-      const monday = getMonday(weekOffset);
-      const days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        return d;
-      });
-
-      const sunday = days[6];
-      document.getElementById('weekLabel').textContent =
-        `${monday.getDate()} ${MONTH_NAMES[monday.getMonth()]} — ${sunday.getDate()} ${MONTH_NAMES[sunday.getMonth()]}`;
-
-      const list = document.getElementById('habitList');
-
-      if (data.habits.length === 0) {
-        list.innerHTML = '<p class="empty">Добавьте первую привычку</p>';
-        return;
-      }
-
-      let html = '<div class="days-header"><span></span>';
-      days.forEach((d, i) => {
-        html += `<span>${DAY_NAMES[i]}</span>`;
-      });
-      html += '</div>';
-
-      data.habits.forEach((habit, hi) => {
-        html += '<div class="habit">';
-        html += `<div class="habit-name">
-          <button class="delete-btn" data-idx="${hi}">&times;</button>
-          ${escapeHtml(habit.name)}
-        </div>`;
-
-        days.forEach(d => {
-          const key = dateKey(d);
-          const checked = habit.checks && habit.checks.includes(key);
-          const todayClass = isToday(d) ? ' today' : '';
-          html += `<div class="day-cell${checked ? ' checked' : ''}${todayClass}"
-                        data-habit="${hi}" data-date="${key}"></div>`;
-        });
-
-        html += '</div>';
-      });
-
-      list.innerHTML = html;
+    function todayKey() {
+      const t = new Date();
+      return dateKey(t.getFullYear(), t.getMonth(), t.getDate());
     }
 
     function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
     }
 
+    // Current streak
+    function getStreak(checks) {
+      if (!checks || checks.length === 0) return 0;
+      const sorted = [...checks].sort().reverse();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const tk = todayKey();
+      const yk = dateKey(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+      // Streak must include today or yesterday
+      if (sorted[0] !== tk && sorted[0] !== yk) return 0;
+
+      let streak = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = new Date(sorted[i - 1] + 'T00:00:00');
+        const curr = new Date(sorted[i] + 'T00:00:00');
+        const diff = (prev - curr) / 86400000;
+        if (diff === 1) streak++;
+        else break;
+      }
+      return streak;
+    }
+
+    function getTotalDays(checks) {
+      return checks ? checks.length : 0;
+    }
+
+    // Build tile grid: last ~6 months of weeks
+    function buildTileGrid(habit) {
+      const color = habit.color || COLORS[0];
+      const checks = new Set(habit.checks || []);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tk = todayKey();
+
+      // Show ~26 weeks (half year)
+      const totalWeeks = 26;
+      // Find the Sunday of this week (end)
+      const endDay = new Date(today);
+      const dow = endDay.getDay();
+      endDay.setDate(endDay.getDate() + (dow === 0 ? 0 : 7 - dow));
+
+      // Start from totalWeeks ago, Monday
+      const startDay = new Date(endDay);
+      startDay.setDate(startDay.getDate() - totalWeeks * 7 + 1);
+
+      let html = '<div class="tile-grid" style="--habit-color:' + color + '">';
+
+      const cursor = new Date(startDay);
+      let weekHtml = '<div class="tile-week">';
+      // Pad first week if doesn't start on Monday
+      const firstDow = cursor.getDay();
+      const mondayOffset = firstDow === 0 ? 6 : firstDow - 1;
+      for (let p = 0; p < mondayOffset; p++) {
+        weekHtml += '<div class="tile future"></div>';
+      }
+
+      while (cursor <= endDay) {
+        const key = dateKey(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+        const isFuture = cursor > today;
+        const isToday = key === tk;
+        const filled = checks.has(key);
+
+        let cls = 'tile';
+        if (isFuture) cls += ' future';
+        else if (filled) cls += ' filled';
+        if (isToday) cls += ' today-tile';
+
+        weekHtml += `<div class="${cls}"></div>`;
+
+        // If Sunday, close week and start new
+        if (cursor.getDay() === 0) {
+          weekHtml += '</div>';
+          html += weekHtml;
+          weekHtml = '<div class="tile-week">';
+        }
+
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      // Close last partial week
+      if (weekHtml !== '<div class="tile-week">') {
+        weekHtml += '</div>';
+        html += weekHtml;
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    // --- Dashboard ---
+    function renderDashboard() {
+      const data = load();
+      const dash = document.getElementById('dashboard');
+
+      if (data.habits.length === 0) {
+        dash.innerHTML = '<p class="empty">Добавьте первую привычку</p>';
+        return;
+      }
+
+      let html = '';
+      data.habits.forEach((habit, idx) => {
+        const color = habit.color || COLORS[0];
+        const streak = getStreak(habit.checks);
+        const total = getTotalDays(habit.checks);
+
+        html += `<div class="habit-card" data-idx="${idx}">`;
+        html += `<div class="habit-header">`;
+        html += `<span class="habit-title">${escapeHtml(habit.name)}</span>`;
+        html += `<span class="habit-streak">`;
+        if (streak > 0) html += `<b>${streak}</b> дн подряд`;
+        else html += `${total} дн всего`;
+        html += `</span></div>`;
+        html += buildTileGrid(habit);
+        html += '</div>';
+      });
+
+      dash.innerHTML = html;
+    }
+
+    // --- Calendar Modal ---
+    function openModal(idx) {
+      openHabitIdx = idx;
+      const today = new Date();
+      calMonth = today.getMonth();
+      calYear = today.getFullYear();
+      renderCalendar();
+      document.getElementById('modalOverlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      openHabitIdx = null;
+      renderDashboard();
+    }
+
+    function renderCalendar() {
+      if (openHabitIdx === null) return;
+      const data = load();
+      const habit = data.habits[openHabitIdx];
+      if (!habit) { closeModal(); return; }
+
+      const color = habit.color || COLORS[0];
+      const checks = new Set(habit.checks || []);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tk = todayKey();
+
+      document.getElementById('modalTitle').textContent = habit.name;
+      document.getElementById('calLabel').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
+
+      // Color picker
+      let cpHtml = '';
+      COLORS.forEach(c => {
+        cpHtml += `<div class="color-dot${c === color ? ' active' : ''}" style="background:${c}" data-color="${c}"></div>`;
+      });
+      document.getElementById('colorPicker').innerHTML = cpHtml;
+
+      // Calendar grid
+      const firstDay = new Date(calYear, calMonth, 1);
+      let startDow = firstDay.getDay();
+      startDow = startDow === 0 ? 6 : startDow - 1; // Monday = 0
+
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+      let html = '';
+      // Empty slots
+      for (let i = 0; i < startDow; i++) {
+        html += '<div class="cal-day empty"></div>';
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key = dateKey(calYear, calMonth, d);
+        const date = new Date(calYear, calMonth, d);
+        const isFuture = date > today;
+        const isToday = key === tk;
+        const checked = checks.has(key);
+
+        let cls = 'cal-day';
+        if (isFuture) cls += ' future-day';
+        if (checked) cls += ' checked';
+        if (isToday) cls += ' today-cal';
+
+        const style = checked ? `style="--habit-color:${color};background:${color}"` : '';
+        html += `<div class="${cls}" ${style} data-date="${key}" ${isFuture ? '' : 'data-clickable="1"'}>${d}</div>`;
+      }
+
+      document.getElementById('calGrid').innerHTML = html;
+
+      // Stats
+      const streak = getStreak(habit.checks);
+      const total = getTotalDays(habit.checks);
+      // Days this month
+      const monthChecks = (habit.checks || []).filter(c => c.startsWith(`${calYear}-${String(calMonth + 1).padStart(2, '0')}`)).length;
+
+      document.getElementById('statsRow').innerHTML = `
+        <div class="stat-box"><div class="stat-value">${streak}</div><div class="stat-label">Подряд</div></div>
+        <div class="stat-box"><div class="stat-value">${monthChecks}</div><div class="stat-label">В этом мес.</div></div>
+        <div class="stat-box"><div class="stat-value">${total}</div><div class="stat-label">Всего</div></div>
+      `;
+    }
+
+    // --- Events ---
+
+    // Add habit
     document.getElementById('addForm').addEventListener('submit', e => {
       e.preventDefault();
       const input = document.getElementById('habitInput');
@@ -277,49 +647,80 @@
       if (!name) return;
 
       const data = load();
-      data.habits.push({ name, checks: [] });
+      const colorIdx = data.habits.length % COLORS.length;
+      data.habits.push({ name, checks: [], color: COLORS[colorIdx] });
       save(data);
       input.value = '';
-      render();
+      renderDashboard();
     });
 
-    document.getElementById('habitList').addEventListener('click', e => {
-      const cell = e.target.closest('.day-cell');
-      if (cell) {
-        const hi = parseInt(cell.dataset.habit);
-        const date = cell.dataset.date;
-        const data = load();
-        const habit = data.habits[hi];
-        if (!habit.checks) habit.checks = [];
+    // Click habit card -> open modal
+    document.getElementById('dashboard').addEventListener('click', e => {
+      const card = e.target.closest('.habit-card');
+      if (card) openModal(parseInt(card.dataset.idx));
+    });
 
-        const idx = habit.checks.indexOf(date);
-        if (idx === -1) {
-          habit.checks.push(date);
-        } else {
-          habit.checks.splice(idx, 1);
-        }
+    // Calendar day click
+    document.getElementById('calGrid').addEventListener('click', e => {
+      const day = e.target.closest('.cal-day[data-clickable]');
+      if (!day || openHabitIdx === null) return;
+
+      const key = day.dataset.date;
+      const data = load();
+      const habit = data.habits[openHabitIdx];
+      if (!habit.checks) habit.checks = [];
+
+      const idx = habit.checks.indexOf(key);
+      if (idx === -1) habit.checks.push(key);
+      else habit.checks.splice(idx, 1);
+
+      save(data);
+      renderCalendar();
+    });
+
+    // Color picker
+    document.getElementById('colorPicker').addEventListener('click', e => {
+      const dot = e.target.closest('.color-dot');
+      if (!dot || openHabitIdx === null) return;
+
+      const data = load();
+      data.habits[openHabitIdx].color = dot.dataset.color;
+      save(data);
+      renderCalendar();
+    });
+
+    // Month nav
+    document.getElementById('calPrev').addEventListener('click', () => {
+      calMonth--;
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      renderCalendar();
+    });
+    document.getElementById('calNext').addEventListener('click', () => {
+      calMonth++;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      renderCalendar();
+    });
+
+    // Close modal
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Delete habit
+    document.getElementById('modalDelete').addEventListener('click', () => {
+      if (openHabitIdx === null) return;
+      const data = load();
+      const name = data.habits[openHabitIdx].name;
+      if (confirm(`Удалить «${name}»?`)) {
+        data.habits.splice(openHabitIdx, 1);
         save(data);
-        render();
-        return;
-      }
-
-      const del = e.target.closest('.delete-btn');
-      if (del) {
-        const hi = parseInt(del.dataset.idx);
-        const data = load();
-        const name = data.habits[hi].name;
-        if (confirm(`Удалить "${name}"?`)) {
-          data.habits.splice(hi, 1);
-          save(data);
-          render();
-        }
+        closeModal();
       }
     });
 
-    document.getElementById('prevWeek').addEventListener('click', () => { weekOffset--; render(); });
-    document.getElementById('nextWeek').addEventListener('click', () => { weekOffset++; render(); });
-
-    render();
+    // Init
+    renderDashboard();
   </script>
 </body>
 </html>
