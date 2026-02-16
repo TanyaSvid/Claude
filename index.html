@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Трекер привычек</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -169,12 +169,31 @@
       max-height: 85vh;
       overflow-y: auto;
       padding: 20px;
+      padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
       animation: slideUp 0.25s ease-out;
     }
 
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
+    }
+
+    @keyframes fadeScale {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (min-width: 600px) {
+      .modal-overlay {
+        align-items: center;
+        padding: 20px;
+      }
+
+      .modal {
+        border-radius: 20px;
+        max-height: 80vh;
+        animation: fadeScale 0.2s ease-out;
+      }
     }
 
     .modal-header {
@@ -266,6 +285,7 @@
 
     .cal-day {
       aspect-ratio: 1;
+      max-width: 52px;
       border-radius: 8px;
       display: flex;
       align-items: center;
