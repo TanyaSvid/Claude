@@ -433,7 +433,7 @@ function safeGet(node, prop) {
     // figma.mixed is returned when text has mixed properties
     if (val === figma.mixed) return null;
     return val;
-  } catch {
+  } catch (e) {
     return null;
   }
 }
