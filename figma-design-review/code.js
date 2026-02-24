@@ -84,7 +84,7 @@ async function exportFrameWithProperties(scale) {
       constraint: { type: 'SCALE', value: scale }
     });
 
-    const designData = extractDesignTree(node, 0, 3);
+    const designData = sanitize(extractDesignTree(node, 0, 3));
 
     figma.ui.postMessage({
       type: 'frame-exported-with-props',
@@ -154,7 +154,7 @@ async function exportAllFramesWithProperties(scale) {
         constraint: { type: 'SCALE', value: scale }
       });
 
-      const designData = extractDesignTree(node, 0, 3);
+      const designData = sanitize(extractDesignTree(node, 0, 3));
 
       figma.ui.postMessage({
         type: 'batch-frame-exported',
@@ -303,8 +303,10 @@ function extractNodeProps(node) {
     const visibleStrokes = node.strokes.filter(s => s.visible !== false);
     if (visibleStrokes.length > 0) {
       props.strokes = visibleStrokes.map(extractPaint);
-      if (node.strokeWeight) props.strokeWeight = node.strokeWeight;
-      if (node.strokeAlign) props.strokeAlign = node.strokeAlign;
+      var sw = safeGet(node, 'strokeWeight');
+      if (sw) props.strokeWeight = sw;
+      var sa = safeGet(node, 'strokeAlign');
+      if (sa) props.strokeAlign = sa;
     }
   }
 
@@ -429,13 +431,30 @@ function hex(n) {
 
 function safeGet(node, prop) {
   try {
-    const val = node[prop];
-    // figma.mixed is returned when text has mixed properties
+    var val = node[prop];
     if (val === figma.mixed) return null;
+    if (typeof val === 'symbol') return null;
     return val;
   } catch (e) {
     return null;
   }
+}
+
+// Recursively strip Symbol values (figma.mixed) so postMessage won't crash
+function sanitize(obj) {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'symbol') return null;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitize);
+  var clean = {};
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      var val = obj[key];
+      if (typeof val === 'symbol') continue;
+      clean[key] = sanitize(val);
+    }
+  }
+  return clean;
 }
 
 // ─── Selection change listener ───
