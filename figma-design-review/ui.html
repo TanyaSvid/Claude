@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8">
   <style>
-    /* ─── Reset & Base ─── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -14,9 +13,9 @@
       overflow-x: hidden;
     }
 
-    /* ─── Layout ─── */
     .app { display: flex; flex-direction: column; height: 100vh; }
 
+    /* ─── Toolbar ─── */
     .toolbar {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 12px;
@@ -24,40 +23,27 @@
       background: var(--figma-color-bg-secondary, #f5f5f5);
       flex-wrap: wrap;
     }
-
     .toolbar label { font-weight: 600; white-space: nowrap; }
-
     .toolbar input, .toolbar select {
       padding: 6px 8px;
       border: 1px solid var(--figma-color-border, #ccc);
-      border-radius: 6px;
-      font-size: 12px;
+      border-radius: 6px; font-size: 12px;
       background: var(--figma-color-bg, #fff);
       color: var(--figma-color-text, #333);
     }
-
-    .toolbar input[type="text"] { flex: 1; min-width: 200px; }
+    .toolbar input[type="text"] { flex: 1; min-width: 180px; }
 
     .btn {
-      padding: 6px 14px;
-      border: none; border-radius: 6px;
-      font-size: 12px; font-weight: 600;
-      cursor: pointer; white-space: nowrap;
-      transition: opacity 0.15s;
+      padding: 6px 14px; border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      white-space: nowrap; transition: opacity 0.15s;
     }
     .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .btn-primary {
-      background: #0d99ff; color: #fff;
-    }
-    .btn-secondary {
-      background: var(--figma-color-bg-tertiary, #e5e5e5);
-      color: var(--figma-color-text, #333);
-    }
-    .btn-danger {
-      background: #f24822; color: #fff;
-    }
+    .btn-primary { background: #0d99ff; color: #fff; }
+    .btn-review { background: #7b61ff; color: #fff; }
+    .btn-secondary { background: var(--figma-color-bg-tertiary, #e5e5e5); color: var(--figma-color-text, #333); }
+    .btn-small { padding: 3px 8px; font-size: 11px; }
 
     /* ─── Tabs ─── */
     .tabs {
@@ -66,154 +52,30 @@
       background: var(--figma-color-bg-secondary, #f5f5f5);
     }
     .tab {
-      padding: 8px 16px;
-      font-size: 12px; font-weight: 500;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
+      padding: 8px 14px; font-size: 12px; font-weight: 500;
+      cursor: pointer; border-bottom: 2px solid transparent;
       color: var(--figma-color-text-secondary, #999);
       transition: all 0.15s;
     }
     .tab:hover { color: var(--figma-color-text, #333); }
-    .tab.active {
-      color: #0d99ff;
-      border-bottom-color: #0d99ff;
-      font-weight: 600;
-    }
+    .tab.active { color: #0d99ff; border-bottom-color: #0d99ff; font-weight: 600; }
 
     /* ─── Status Bar ─── */
     .status-bar {
-      padding: 6px 12px;
-      font-size: 11px;
+      padding: 6px 12px; font-size: 11px;
       color: var(--figma-color-text-secondary, #999);
       border-bottom: 1px solid var(--figma-color-border, #e5e5e5);
       display: flex; justify-content: space-between; align-items: center;
     }
     .match-score {
-      font-weight: 700; font-size: 14px; padding: 2px 8px;
-      border-radius: 4px; color: #fff;
+      font-weight: 700; font-size: 13px; padding: 2px 8px;
+      border-radius: 4px; color: #fff; display: inline-block;
     }
     .match-score.good { background: #14ae5c; }
     .match-score.ok { background: #ffb800; color: #333; }
     .match-score.bad { background: #f24822; }
 
-    /* ─── Content Area ─── */
-    .content { flex: 1; overflow: auto; position: relative; }
-
-    .empty-state {
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      height: 100%; gap: 12px;
-      color: var(--figma-color-text-secondary, #999);
-    }
-    .empty-state svg { opacity: 0.3; }
-    .empty-state p { max-width: 300px; text-align: center; line-height: 1.5; }
-
-    /* ─── Comparison Views ─── */
-    .compare-container {
-      display: none;
-      width: 100%; height: 100%;
-    }
-    .compare-container.active { display: block; }
-
-    /* Side by side */
-    .side-by-side {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2px; height: 100%;
-      background: var(--figma-color-border, #e5e5e5);
-    }
-    .side-by-side .pane {
-      overflow: auto; background: #f8f8f8;
-      position: relative;
-    }
-    .side-by-side .pane-label {
-      position: sticky; top: 0; z-index: 2;
-      padding: 4px 8px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 10px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .side-by-side img {
-      width: 100%; display: block;
-      image-rendering: -webkit-optimize-contrast;
-    }
-
-    /* Overlay / Slider */
-    .overlay-view {
-      position: relative; width: 100%; height: 100%;
-      overflow: auto;
-    }
-    .overlay-view .img-stack {
-      position: relative; display: inline-block;
-    }
-    .overlay-view img {
-      display: block;
-      max-width: 100%;
-      image-rendering: -webkit-optimize-contrast;
-    }
-    .overlay-view .img-top {
-      position: absolute; top: 0; left: 0;
-      clip-path: inset(0 0 0 0);
-    }
-    .slider-control {
-      position: absolute; top: 0; bottom: 0;
-      width: 3px; background: #f24822;
-      cursor: col-resize; z-index: 10;
-    }
-    .slider-control::after {
-      content: ''; position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      background: #f24822;
-      border: 2px solid #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-    }
-
-    /* Diff view */
-    .diff-view {
-      overflow: auto; height: 100%;
-      background: #1a1a1a;
-      display: flex; align-items: flex-start; justify-content: center;
-    }
-    .diff-view img {
-      max-width: 100%; display: block;
-      image-rendering: -webkit-optimize-contrast;
-    }
-
-    /* ─── Batch Mode ─── */
-    .batch-list {
-      padding: 12px;
-    }
-    .batch-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px; margin-bottom: 4px;
-      border: 1px solid var(--figma-color-border, #e5e5e5);
-      border-radius: 8px;
-      background: var(--figma-color-bg, #fff);
-    }
-    .batch-item .frame-name {
-      font-weight: 600; min-width: 120px;
-    }
-    .batch-item input {
-      flex: 1; padding: 4px 8px;
-      border: 1px solid var(--figma-color-border, #ccc);
-      border-radius: 4px; font-size: 12px;
-    }
-    .batch-item .batch-score {
-      font-weight: 700; font-size: 11px;
-      min-width: 50px; text-align: center;
-    }
-    .batch-item .batch-status {
-      font-size: 11px; min-width: 80px; text-align: center;
-    }
-    .batch-item .batch-status.pending { color: #999; }
-    .batch-item .batch-status.running { color: #0d99ff; }
-    .batch-item .batch-status.done { color: #14ae5c; }
-    .batch-item .batch-status.error { color: #f24822; }
-
-    /* ─── Settings Row ─── */
+    /* ─── Settings ─── */
     .settings-row {
       display: flex; align-items: center; gap: 8px;
       padding: 4px 12px;
@@ -222,7 +84,7 @@
     }
     .settings-row label { white-space: nowrap; }
     .settings-row input[type="number"] {
-      width: 60px; padding: 3px 6px;
+      width: 55px; padding: 3px 6px;
       border: 1px solid var(--figma-color-border, #ccc);
       border-radius: 4px; font-size: 11px;
     }
@@ -232,27 +94,188 @@
       border-radius: 4px; font-size: 11px;
     }
 
+    /* ─── Content ─── */
+    .content { flex: 1; overflow: auto; position: relative; }
+
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; gap: 12px;
+      color: var(--figma-color-text-secondary, #999);
+    }
+    .empty-state svg { opacity: 0.3; }
+    .empty-state p { max-width: 320px; text-align: center; line-height: 1.5; }
+
+    .compare-container { display: none; width: 100%; height: 100%; }
+    .compare-container.active { display: block; }
+
+    /* Side by side */
+    .side-by-side {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2px; height: 100%;
+      background: var(--figma-color-border, #e5e5e5);
+    }
+    .side-by-side .pane { overflow: auto; background: #f8f8f8; position: relative; }
+    .side-by-side .pane-label {
+      position: sticky; top: 0; z-index: 2;
+      padding: 4px 8px; background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .side-by-side img { width: 100%; display: block; image-rendering: -webkit-optimize-contrast; }
+
+    /* Overlay */
+    .overlay-view { position: relative; width: 100%; height: 100%; overflow: auto; }
+    .overlay-view .img-stack { position: relative; display: inline-block; }
+    .overlay-view img { display: block; max-width: 100%; image-rendering: -webkit-optimize-contrast; }
+    .overlay-view .img-top { position: absolute; top: 0; left: 0; }
+    .slider-control {
+      position: absolute; top: 0; bottom: 0; width: 3px;
+      background: #f24822; cursor: col-resize; z-index: 10;
+    }
+    .slider-control::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #f24822; border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Diff */
+    .diff-view {
+      overflow: auto; height: 100%; background: #1a1a1a;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .diff-view img { max-width: 100%; display: block; image-rendering: -webkit-optimize-contrast; }
+
+    /* ─── Report ─── */
+    .report-view { height: 100%; overflow: auto; padding: 12px; }
+
+    .report-summary {
+      padding: 12px; margin-bottom: 12px;
+      background: var(--figma-color-bg-secondary, #f5f5f5);
+      border-radius: 8px; line-height: 1.6;
+    }
+    .report-summary strong { font-size: 14px; }
+
+    .report-stats {
+      display: flex; gap: 12px; margin: 8px 0; flex-wrap: wrap;
+    }
+    .stat-card {
+      padding: 8px 14px; border-radius: 6px;
+      background: var(--figma-color-bg, #fff);
+      border: 1px solid var(--figma-color-border, #e5e5e5);
+      text-align: center; min-width: 80px;
+    }
+    .stat-card .stat-number { font-size: 20px; font-weight: 700; }
+    .stat-card .stat-label { font-size: 10px; color: #999; margin-top: 2px; }
+
+    .report-filters {
+      display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 4px 10px; border-radius: 12px; font-size: 11px;
+      cursor: pointer; border: 1px solid var(--figma-color-border, #ddd);
+      background: var(--figma-color-bg, #fff);
+    }
+    .filter-btn.active { background: #0d99ff; color: #fff; border-color: #0d99ff; }
+
+    .issue-card {
+      padding: 10px 12px; margin-bottom: 6px;
+      border-radius: 6px; border-left: 3px solid;
+      background: var(--figma-color-bg, #fff);
+      border: 1px solid var(--figma-color-border, #e5e5e5);
+    }
+    .issue-card.error { border-left-color: #f24822; }
+    .issue-card.warning { border-left-color: #ffb800; }
+    .issue-card.info { border-left-color: #0d99ff; }
+
+    .issue-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 4px;
+    }
+    .issue-type {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 1px 6px; border-radius: 3px;
+    }
+    .issue-type.typography { background: #e8d5ff; color: #5b21b6; }
+    .issue-type.spacing { background: #d5f5e3; color: #0d7b3e; }
+    .issue-type.color { background: #fde8e8; color: #c0392b; }
+    .issue-type.image { background: #fef3cd; color: #856404; }
+
+    .issue-severity {
+      font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px;
+    }
+    .issue-severity.error { background: #fde8e8; color: #f24822; }
+    .issue-severity.warning { background: #fef3cd; color: #b8860b; }
+    .issue-severity.info { background: #d5eeff; color: #0d6efd; }
+
+    .issue-message { font-size: 12px; margin: 4px 0; line-height: 1.4; }
+    .issue-detail {
+      font-size: 11px; color: #999; margin-top: 4px;
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .issue-detail code {
+      background: var(--figma-color-bg-secondary, #f0f0f0);
+      padding: 1px 4px; border-radius: 3px; font-size: 11px;
+    }
+
+    .report-export-bar {
+      display: flex; gap: 8px; margin-bottom: 12px;
+    }
+
+    /* ─── States ─── */
+    .states-section {
+      padding: 12px; border-top: 1px solid var(--figma-color-border, #e5e5e5);
+    }
+    .state-item {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+      padding: 6px 8px; border-radius: 6px;
+      background: var(--figma-color-bg, #fff);
+      border: 1px solid var(--figma-color-border, #e5e5e5);
+    }
+    .state-item input, .state-item select {
+      padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;
+    }
+
+    /* ─── Batch ─── */
+    .batch-list { padding: 12px; }
+    .batch-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px; margin-bottom: 4px;
+      border: 1px solid var(--figma-color-border, #e5e5e5);
+      border-radius: 8px; background: var(--figma-color-bg, #fff);
+    }
+    .batch-item .frame-name { font-weight: 600; min-width: 120px; }
+    .batch-item input {
+      flex: 1; padding: 4px 8px;
+      border: 1px solid var(--figma-color-border, #ccc);
+      border-radius: 4px; font-size: 12px;
+    }
+    .batch-item .batch-score { font-weight: 700; font-size: 11px; min-width: 50px; text-align: center; }
+    .batch-status { font-size: 11px; min-width: 80px; text-align: center; }
+    .batch-status.pending { color: #999; }
+    .batch-status.running { color: #0d99ff; }
+    .batch-status.done { color: #14ae5c; }
+    .batch-status.error { color: #f24822; }
+
     /* ─── Progress ─── */
     .progress-overlay {
       position: absolute; inset: 0;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.92);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 12px; z-index: 100;
     }
     .spinner {
       width: 32px; height: 32px;
-      border: 3px solid #e5e5e5;
-      border-top-color: #0d99ff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      border: 3px solid #e5e5e5; border-top-color: #0d99ff;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .progress-text { font-weight: 600; }
 
     .hidden { display: none !important; }
 
-    /* ─── Scrollable checkerboard bg ─── */
     .checker-bg {
       background-image:
         linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
@@ -265,670 +288,734 @@
   </style>
 </head>
 <body>
-  <div class="app">
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <label>URL:</label>
-      <input type="text" id="urlInput" placeholder="https://example.com/page" />
-      <label>Server:</label>
-      <input type="text" id="serverUrl" value="http://localhost:3742" style="width: 160px; flex: none;" />
-      <button class="btn btn-primary" id="compareBtn" disabled>Compare</button>
-      <button class="btn btn-secondary" id="batchBtn">Batch</button>
-    </div>
-
-    <!-- Settings -->
-    <div class="settings-row">
-      <label>Scale:</label>
-      <select id="scaleSelect">
-        <option value="1">1x</option>
-        <option value="2" selected>2x (Retina)</option>
-        <option value="3">3x</option>
-      </select>
-      <label>Threshold:</label>
-      <input type="number" id="thresholdInput" value="0.1" min="0" max="1" step="0.05" title="pixelmatch threshold (0=strict, 1=lenient)" />
-      <label>Anti-aliasing:</label>
-      <select id="aaSelect">
-        <option value="true" selected>Detect</option>
-        <option value="false">Ignore</option>
-      </select>
-      <label>Delay (ms):</label>
-      <input type="number" id="delayInput" value="1000" min="0" max="10000" step="500" title="Wait before screenshot (for animations/loading)" />
-      <label>Hide selectors:</label>
-      <input type="text" id="hideSelectors" placeholder=".cookie-banner, .chat-widget" style="flex: 1;" title="CSS selectors to hide before screenshot" />
-    </div>
-
-    <!-- Selection Info -->
-    <div class="status-bar" id="selectionBar">
-      <span id="selectionInfo">Select a frame in Figma to begin</span>
-      <span id="scoreDisplay" class="hidden"></span>
-    </div>
-
-    <!-- Tabs -->
-    <div class="tabs" id="viewTabs">
-      <div class="tab active" data-view="side-by-side">Side by Side</div>
-      <div class="tab" data-view="overlay">Overlay</div>
-      <div class="tab" data-view="diff">Diff</div>
-      <div class="tab" data-view="batch">Batch Results</div>
-    </div>
-
-    <!-- Content -->
-    <div class="content" id="content">
-      <!-- Empty State -->
-      <div class="empty-state" id="emptyState">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
-        <p><strong>Design Review</strong></p>
-        <p>Select a frame in Figma, enter the URL of the live page, and click Compare to see pixel-level differences.</p>
-        <p style="font-size: 11px; margin-top: 8px;">Make sure the comparison server is running:<br><code>cd server && npm start</code></p>
-      </div>
-
-      <!-- Side by Side -->
-      <div class="compare-container" id="viewSideBySide">
-        <div class="side-by-side">
-          <div class="pane" id="paneDesign">
-            <div class="pane-label">Figma Design</div>
-            <img id="imgDesign" />
-          </div>
-          <div class="pane" id="paneScreenshot">
-            <div class="pane-label">Live Site</div>
-            <img id="imgScreenshot" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Overlay with slider -->
-      <div class="compare-container" id="viewOverlay">
-        <div class="overlay-view" id="overlayView">
-          <div class="img-stack" id="imgStack">
-            <img id="imgOverlayBottom" />
-            <img id="imgOverlayTop" class="img-top" />
-            <div class="slider-control" id="sliderControl"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Diff -->
-      <div class="compare-container" id="viewDiff">
-        <div class="diff-view checker-bg">
-          <img id="imgDiff" />
-        </div>
-      </div>
-
-      <!-- Batch Results -->
-      <div class="compare-container" id="viewBatch">
-        <div class="batch-list" id="batchList">
-          <p style="color: #999; text-align: center; padding: 40px;">
-            Click "Batch" to set up URLs for all frames on this page, then run comparison.
-          </p>
-        </div>
-      </div>
-
-      <!-- Progress Overlay -->
-      <div class="progress-overlay hidden" id="progressOverlay">
-        <div class="spinner"></div>
-        <div class="progress-text" id="progressText">Comparing...</div>
-      </div>
-    </div>
+<div class="app">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <label>URL:</label>
+    <input type="text" id="urlInput" placeholder="https://example.com/page" />
+    <label>Server:</label>
+    <input type="text" id="serverUrl" value="http://localhost:3742" style="width: 150px; flex: none;" />
+    <button class="btn btn-primary" id="compareBtn" disabled>Compare</button>
+    <button class="btn btn-review" id="reviewBtn" disabled title="Full review: pixel diff + CSS analysis + report">Review</button>
+    <button class="btn btn-secondary" id="batchBtn">Batch</button>
   </div>
 
-  <script>
-    // ─── State ───
-    const state = {
-      selectedFrames: [],
-      currentFrameData: null,  // { data: Uint8Array, name, width, height, scale, id }
-      screenshotData: null,    // base64 PNG
-      diffData: null,          // base64 PNG
-      matchPercent: null,
-      batchItems: [],          // [{ frameId, name, width, height, url, score, status, ... }]
-      currentView: 'side-by-side',
-      sliderPos: 0.5,
-    };
+  <!-- Settings -->
+  <div class="settings-row">
+    <label>Scale:</label>
+    <select id="scaleSelect">
+      <option value="1">1x</option>
+      <option value="2" selected>2x</option>
+    </select>
+    <label>Threshold:</label>
+    <input type="number" id="thresholdInput" value="0.1" min="0" max="1" step="0.05" />
+    <label>AA:</label>
+    <select id="aaSelect"><option value="true" selected>On</option><option value="false">Off</option></select>
+    <label>Delay:</label>
+    <input type="number" id="delayInput" value="1000" min="0" max="10000" step="500" />
+    <label>Hide:</label>
+    <input type="text" id="hideSelectors" placeholder=".cookie-banner, .chat-widget" style="flex: 1;" />
+  </div>
 
-    // ─── DOM References ───
-    const $ = (sel) => document.querySelector(sel);
-    const urlInput = $('#urlInput');
-    const serverUrl = $('#serverUrl');
-    const compareBtn = $('#compareBtn');
-    const batchBtn = $('#batchBtn');
-    const selectionInfo = $('#selectionInfo');
-    const scoreDisplay = $('#scoreDisplay');
-    const progressOverlay = $('#progressOverlay');
-    const progressText = $('#progressText');
-    const emptyState = $('#emptyState');
+  <!-- Selection Info -->
+  <div class="status-bar" id="selectionBar">
+    <span id="selectionInfo">Select a frame in Figma to begin</span>
+    <span id="scoreDisplay" class="hidden"></span>
+  </div>
 
-    // ─── Plugin Communication ───
-    function postToPlugin(msg) {
-      parent.postMessage({ pluginMessage: msg }, '*');
-    }
+  <!-- Tabs -->
+  <div class="tabs" id="viewTabs">
+    <div class="tab active" data-view="side-by-side">Side by Side</div>
+    <div class="tab" data-view="overlay">Overlay</div>
+    <div class="tab" data-view="diff">Diff</div>
+    <div class="tab" data-view="report">Report</div>
+    <div class="tab" data-view="batch">Batch</div>
+  </div>
 
-    // Listen for messages from plugin code
-    window.onmessage = (event) => {
-      const msg = event.data.pluginMessage;
-      if (!msg) return;
+  <!-- Content -->
+  <div class="content" id="content">
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <p><strong>Design Review</strong></p>
+      <p>Select a frame in Figma, enter the URL, and click:</p>
+      <p><strong>Compare</strong> — pixel diff only<br><strong>Review</strong> — full analysis with CSS comparison and developer report</p>
+      <p style="font-size: 11px; margin-top: 8px;">Server: <code>cd server && npm start</code></p>
+    </div>
 
-      switch (msg.type) {
-        case 'selection-info':
-          handleSelectionInfo(msg);
-          break;
-        case 'frame-exported':
-          handleFrameExported(msg);
-          break;
-        case 'export-error':
-          showError(msg.message);
-          hideProgress();
-          break;
-        case 'batch-export-start':
-          handleBatchExportStart(msg);
-          break;
-        case 'batch-frame-exported':
-          handleBatchFrameExported(msg);
-          break;
-        case 'batch-export-done':
-          handleBatchExportDone();
-          break;
-        case 'batch-frame-error':
-          handleBatchFrameError(msg);
-          break;
-      }
-    };
+    <!-- Side by Side -->
+    <div class="compare-container" id="viewSideBySide">
+      <div class="side-by-side">
+        <div class="pane"><div class="pane-label">Figma Design</div><img id="imgDesign" /></div>
+        <div class="pane"><div class="pane-label">Live Site</div><img id="imgScreenshot" /></div>
+      </div>
+    </div>
 
-    // ─── Selection Handling ───
-    function handleSelectionInfo(msg) {
-      state.selectedFrames = msg.frames || [];
-      if (msg.message) {
-        selectionInfo.textContent = msg.message;
-        compareBtn.disabled = true;
-      } else if (state.selectedFrames.length === 1) {
-        const f = state.selectedFrames[0];
-        selectionInfo.textContent = `${f.name} — ${f.width}x${f.height}`;
-        compareBtn.disabled = !urlInput.value.trim();
-      } else if (state.selectedFrames.length > 1) {
-        selectionInfo.textContent = `${state.selectedFrames.length} frames selected — use Batch mode`;
-        compareBtn.disabled = true;
-      }
-    }
+    <!-- Overlay -->
+    <div class="compare-container" id="viewOverlay">
+      <div class="overlay-view">
+        <div class="img-stack" id="imgStack">
+          <img id="imgOverlayBottom" />
+          <img id="imgOverlayTop" class="img-top" />
+          <div class="slider-control" id="sliderControl"></div>
+        </div>
+      </div>
+    </div>
 
-    // ─── Frame Export ───
-    function handleFrameExported(msg) {
-      state.currentFrameData = {
-        data: new Uint8Array(msg.data),
-        name: msg.name,
-        width: msg.width,
-        height: msg.height,
-        scale: msg.scale,
-        id: msg.id,
-      };
+    <!-- Diff -->
+    <div class="compare-container" id="viewDiff">
+      <div class="diff-view checker-bg"><img id="imgDiff" /></div>
+    </div>
 
-      // Now send to server for comparison
-      runComparison();
-    }
+    <!-- Report -->
+    <div class="compare-container" id="viewReport">
+      <div class="report-view" id="reportView">
+        <p style="color: #999; text-align: center; padding: 40px;">
+          Click "Review" to generate a full design review report.
+        </p>
+      </div>
+    </div>
 
-    // ─── Server Communication ───
-    async function runComparison() {
-      const url = urlInput.value.trim();
-      const server = serverUrl.value.trim();
-      const frame = state.currentFrameData;
+    <!-- Batch -->
+    <div class="compare-container" id="viewBatch">
+      <div class="batch-list" id="batchList">
+        <p style="color: #999; text-align: center; padding: 40px;">
+          Click "Batch" to compare all frames on this page.
+        </p>
+      </div>
+    </div>
 
-      if (!url || !frame) return;
+    <!-- Progress -->
+    <div class="progress-overlay hidden" id="progressOverlay">
+      <div class="spinner"></div>
+      <div class="progress-text" id="progressText">Working...</div>
+    </div>
+  </div>
+</div>
 
-      showProgress('Taking screenshot and comparing...');
+<script>
+// ─── State ───
+const state = {
+  selectedFrames: [],
+  currentFrameData: null,
+  screenshotData: null,
+  diffData: null,
+  matchPercent: null,
+  reportData: null,
+  batchItems: [],
+  currentView: 'side-by-side',
+  sliderPos: 0.5,
+  reviewMode: false,
+};
 
-      try {
-        // Convert frame PNG bytes to base64
-        const base64Frame = uint8ToBase64(frame.data);
+const $ = (sel) => document.querySelector(sel);
+const urlInput = $('#urlInput');
+const serverUrl = $('#serverUrl');
+const compareBtn = $('#compareBtn');
+const reviewBtn = $('#reviewBtn');
+const batchBtn = $('#batchBtn');
+const selectionInfo = $('#selectionInfo');
+const scoreDisplay = $('#scoreDisplay');
+const progressOverlay = $('#progressOverlay');
+const progressText = $('#progressText');
+const emptyState = $('#emptyState');
 
-        const scale = parseInt($('#scaleSelect').value);
-        const threshold = parseFloat($('#thresholdInput').value);
-        const detectAA = $('#aaSelect').value === 'true';
-        const delay = parseInt($('#delayInput').value);
-        const hideSelectors = $('#hideSelectors').value.trim();
+function postToPlugin(msg) { parent.postMessage({ pluginMessage: msg }, '*'); }
 
-        const response = await fetch(`${server}/compare`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: url,
-            figmaImage: base64Frame,
-            viewport: {
-              width: frame.width,
-              height: frame.height,
-            },
-            scale: scale,
-            threshold: threshold,
-            includeAA: detectAA,
-            delay: delay,
-            hideSelectors: hideSelectors || undefined,
-            fullPage: true,
-          })
-        });
+// ─── Plugin Messages ───
+window.onmessage = (event) => {
+  const msg = event.data.pluginMessage;
+  if (!msg) return;
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || `Server error: ${response.status}`);
-        }
+  switch (msg.type) {
+    case 'selection-info': handleSelectionInfo(msg); break;
+    case 'frame-exported': handleFrameExported(msg); break;
+    case 'frame-exported-with-props': handleFrameExportedWithProps(msg); break;
+    case 'export-error': showError(msg.message); hideProgress(); break;
+    case 'batch-export-start': handleBatchExportStart(msg); break;
+    case 'batch-frame-exported': handleBatchFrameExported(msg); break;
+    case 'batch-export-done': handleBatchExportDone(); break;
+    case 'batch-frame-error': break;
+  }
+};
 
-        const result = await response.json();
-        displayResults(result, base64Frame);
-      } catch (err) {
-        showError(`Comparison failed: ${err.message}`);
-      } finally {
-        hideProgress();
-      }
-    }
+function handleSelectionInfo(msg) {
+  state.selectedFrames = msg.frames || [];
+  if (msg.message) {
+    selectionInfo.textContent = msg.message;
+    compareBtn.disabled = reviewBtn.disabled = true;
+  } else if (state.selectedFrames.length === 1) {
+    const f = state.selectedFrames[0];
+    selectionInfo.textContent = `${f.name} — ${f.width}×${f.height}`;
+    const hasUrl = urlInput.value.trim();
+    compareBtn.disabled = reviewBtn.disabled = !hasUrl;
+  } else if (state.selectedFrames.length > 1) {
+    selectionInfo.textContent = `${state.selectedFrames.length} frames — use Batch`;
+    compareBtn.disabled = reviewBtn.disabled = true;
+  }
+}
 
-    function displayResults(result, figmaBase64) {
-      state.screenshotData = result.screenshot;
-      state.diffData = result.diff;
-      state.matchPercent = result.matchPercent;
+// ─── Simple compare flow ───
+function handleFrameExported(msg) {
+  state.currentFrameData = {
+    data: new Uint8Array(msg.data), name: msg.name,
+    width: msg.width, height: msg.height, scale: msg.scale, id: msg.id,
+  };
+  runComparison();
+}
 
-      // Update images
-      $('#imgDesign').src = `data:image/png;base64,${figmaBase64}`;
-      $('#imgScreenshot').src = `data:image/png;base64,${result.screenshot}`;
-      $('#imgDiff').src = `data:image/png;base64,${result.diff}`;
-      $('#imgOverlayBottom').src = `data:image/png;base64,${result.screenshot}`;
-      $('#imgOverlayTop').src = `data:image/png;base64,${figmaBase64}`;
+// ─── Full review flow ───
+function handleFrameExportedWithProps(msg) {
+  state.currentFrameData = {
+    data: new Uint8Array(msg.data), name: msg.name,
+    width: msg.width, height: msg.height, scale: msg.scale, id: msg.id,
+    designData: msg.designData,
+  };
+  runFullReview();
+}
 
-      // Update score
-      const score = result.matchPercent;
-      scoreDisplay.classList.remove('hidden');
-      scoreDisplay.innerHTML = `<span class="match-score ${score >= 95 ? 'good' : score >= 80 ? 'ok' : 'bad'}">${score.toFixed(1)}% match</span>` +
-        `<span style="margin-left: 8px; font-size: 11px;">${result.mismatchedPixels.toLocaleString()} different pixels` +
-        ` / ${result.totalPixels.toLocaleString()} total` +
-        `${result.dimensions ? ` | Screenshot: ${result.dimensions.screenshot.width}x${result.dimensions.screenshot.height}` : ''}</span>`;
+async function runComparison() {
+  const url = urlInput.value.trim();
+  const server = serverUrl.value.trim();
+  const frame = state.currentFrameData;
+  if (!url || !frame) return;
 
-      // Show comparison view
-      emptyState.classList.add('hidden');
-      showView(state.currentView === 'batch' ? 'side-by-side' : state.currentView);
-
-      // Init slider
-      initSlider();
-    }
-
-    // ─── View Switching ───
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        showView(tab.dataset.view);
-      });
+  showProgress('Taking screenshot and comparing...');
+  try {
+    const base64Frame = uint8ToBase64(frame.data);
+    const response = await fetch(`${server}/compare`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url, figmaImage: base64Frame,
+        viewport: { width: frame.width, height: frame.height },
+        scale: parseInt($('#scaleSelect').value),
+        threshold: parseFloat($('#thresholdInput').value),
+        includeAA: $('#aaSelect').value === 'true',
+        delay: parseInt($('#delayInput').value),
+        hideSelectors: $('#hideSelectors').value.trim() || undefined,
+        fullPage: true,
+      })
     });
 
-    function showView(viewName) {
-      state.currentView = viewName;
-      document.querySelectorAll('.tab').forEach(t =>
-        t.classList.toggle('active', t.dataset.view === viewName)
-      );
-      document.querySelectorAll('.compare-container').forEach(c =>
-        c.classList.remove('active')
-      );
-
-      const viewMap = {
-        'side-by-side': 'viewSideBySide',
-        'overlay': 'viewOverlay',
-        'diff': 'viewDiff',
-        'batch': 'viewBatch',
-      };
-
-      const container = $(`#${viewMap[viewName]}`);
-      if (container) container.classList.add('active');
-
-      if (viewName === 'overlay') {
-        requestAnimationFrame(() => initSlider());
-      }
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `Server error: ${response.status}`);
     }
 
-    // ─── Overlay Slider ───
-    function initSlider() {
-      const slider = $('#sliderControl');
-      const imgTop = $('#imgOverlayTop');
-      const stack = $('#imgStack');
-      if (!slider || !stack) return;
+    const result = await response.json();
+    displayPixelResults(result, base64Frame);
+  } catch (err) {
+    showError(`Comparison failed: ${err.message}`);
+  } finally {
+    hideProgress();
+  }
+}
 
-      updateSlider(state.sliderPos);
+async function runFullReview() {
+  const url = urlInput.value.trim();
+  const server = serverUrl.value.trim();
+  const frame = state.currentFrameData;
+  if (!url || !frame) return;
 
-      let isDragging = false;
-
-      slider.onmousedown = (e) => {
-        isDragging = true;
-        e.preventDefault();
-      };
-
-      document.onmousemove = (e) => {
-        if (!isDragging) return;
-        const rect = stack.getBoundingClientRect();
-        let pos = (e.clientX - rect.left) / rect.width;
-        pos = Math.max(0, Math.min(1, pos));
-        state.sliderPos = pos;
-        updateSlider(pos);
-      };
-
-      document.onmouseup = () => { isDragging = false; };
-    }
-
-    function updateSlider(pos) {
-      const slider = $('#sliderControl');
-      const imgTop = $('#imgOverlayTop');
-      const stack = $('#imgStack');
-      if (!slider || !imgTop || !stack) return;
-
-      const width = stack.offsetWidth;
-      slider.style.left = (pos * width) + 'px';
-      imgTop.style.clipPath = `inset(0 ${(1 - pos) * 100}% 0 0)`;
-    }
-
-    // ─── Batch Mode ───
-    batchBtn.addEventListener('click', () => {
-      showView('batch');
-      setupBatchMode();
+  showProgress('Full review: screenshot + CSS extraction + comparison...');
+  try {
+    const base64Frame = uint8ToBase64(frame.data);
+    const response = await fetch(`${server}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url, figmaImage: base64Frame,
+        viewport: { width: frame.width, height: frame.height },
+        scale: parseInt($('#scaleSelect').value),
+        threshold: parseFloat($('#thresholdInput').value),
+        includeAA: $('#aaSelect').value === 'true',
+        delay: parseInt($('#delayInput').value),
+        hideSelectors: $('#hideSelectors').value.trim() || undefined,
+        fullPage: true,
+        designData: frame.designData || null,
+      })
     });
 
-    function setupBatchMode() {
-      // Request all frames info
-      postToPlugin({ type: 'get-selection' });
-
-      // Build batch list after a short delay (wait for selection info)
-      setTimeout(() => {
-        buildBatchList();
-      }, 200);
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `Server error: ${response.status}`);
     }
 
-    function buildBatchList() {
-      const list = $('#batchList');
-      const baseUrl = urlInput.value.trim();
+    const result = await response.json();
+    displayPixelResults(result, base64Frame);
+    displayReport(result);
+    showView('report');
+  } catch (err) {
+    showError(`Review failed: ${err.message}`);
+  } finally {
+    hideProgress();
+  }
+}
 
-      // Use all frames on page — request export
-      list.innerHTML = `
-        <div style="padding: 12px;">
-          <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
-            <label style="font-weight: 600;">Base URL:</label>
-            <input type="text" id="batchBaseUrl" value="${baseUrl}" placeholder="https://example.com" style="flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;" />
-            <button class="btn btn-secondary" onclick="loadBatchFrames()">Load Frames</button>
-            <button class="btn btn-primary" id="runBatchBtn" onclick="runBatch()" disabled>Run All</button>
-          </div>
-          <div id="batchFramesList">
-            <p style="color: #999; text-align: center;">Click "Load Frames" to load all frames from the current page.</p>
-          </div>
-          <div id="batchSummary" class="hidden" style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 8px;"></div>
+function displayPixelResults(result, figmaBase64) {
+  state.screenshotData = result.screenshot;
+  state.diffData = result.diff;
+  state.matchPercent = result.matchPercent;
+
+  $('#imgDesign').src = `data:image/png;base64,${figmaBase64}`;
+  $('#imgScreenshot').src = `data:image/png;base64,${result.screenshot}`;
+  $('#imgDiff').src = `data:image/png;base64,${result.diff}`;
+  $('#imgOverlayBottom').src = `data:image/png;base64,${result.screenshot}`;
+  $('#imgOverlayTop').src = `data:image/png;base64,${figmaBase64}`;
+
+  const score = result.matchPercent;
+  scoreDisplay.classList.remove('hidden');
+  scoreDisplay.innerHTML = `<span class="match-score ${score >= 95 ? 'good' : score >= 80 ? 'ok' : 'bad'}">${score.toFixed(1)}%</span>` +
+    `<span style="margin-left: 6px; font-size: 11px;">${result.mismatchedPixels.toLocaleString()} diff px</span>`;
+
+  emptyState.classList.add('hidden');
+  if (!state.reviewMode) showView(state.currentView === 'batch' || state.currentView === 'report' ? 'side-by-side' : state.currentView);
+  initSlider();
+}
+
+// ─── Report Display ───
+function displayReport(result) {
+  state.reportData = result.report;
+  const rv = $('#reportView');
+
+  if (!result.report || !result.report.issues) {
+    rv.innerHTML = `<div class="report-summary"><strong>Pixel match: ${result.matchPercent}%</strong><br>No design token data for detailed CSS comparison. Select frames with auto-layout for better results.</div>`;
+    return;
+  }
+
+  const r = result.report;
+  const issues = r.issues || [];
+  const stats = r.stats || {};
+
+  const typeCounts = {};
+  issues.forEach(i => { typeCounts[i.type] = (typeCounts[i.type] || 0) + 1; });
+
+  rv.innerHTML = `
+    <div class="report-summary">
+      <strong>Design Review Report</strong>
+      <div class="report-stats">
+        <div class="stat-card">
+          <div class="stat-number"><span class="match-score ${stats.matchPercent >= 95 ? 'good' : stats.matchPercent >= 80 ? 'ok' : 'bad'}">${stats.matchPercent}%</span></div>
+          <div class="stat-label">pixel match</div>
         </div>
-      `;
-    }
-
-    // Exposed to onclick
-    window.loadBatchFrames = function() {
-      postToPlugin({ type: 'export-all-frames', scale: parseInt($('#scaleSelect').value) });
-    };
-
-    function handleBatchExportStart(msg) {
-      state.batchItems = [];
-      showProgress(`Exporting frames: 0 / ${msg.total}`);
-    }
-
-    function handleBatchFrameExported(msg) {
-      state.batchItems.push({
-        id: msg.id,
-        name: msg.name,
-        width: msg.width,
-        height: msg.height,
-        scale: msg.scale,
-        data: new Uint8Array(msg.data),
-        url: '',
-        score: null,
-        status: 'pending',
-      });
-      progressText.textContent = `Exporting frames: ${msg.index + 1} / ${msg.total}`;
-    }
-
-    function handleBatchFrameError(msg) {
-      progressText.textContent = `Error exporting "${msg.name}", continuing...`;
-    }
-
-    function handleBatchExportDone() {
-      hideProgress();
-      renderBatchItems();
-    }
-
-    function renderBatchItems() {
-      const container = $('#batchFramesList');
-      if (!container) return;
-
-      const baseUrl = ($('#batchBaseUrl') || {}).value || '';
-
-      container.innerHTML = state.batchItems.map((item, i) => `
-        <div class="batch-item" data-index="${i}">
-          <span class="frame-name" title="${item.name}">${truncate(item.name, 20)}</span>
-          <span style="color: #999; font-size: 11px; min-width: 70px;">${item.width}x${item.height}</span>
-          <input type="text"
-            class="batch-url"
-            data-index="${i}"
-            value="${item.url || guessUrl(baseUrl, item.name)}"
-            placeholder="https://..."
-          />
-          <span class="batch-status ${item.status}">${statusLabel(item.status)}</span>
-          <span class="batch-score">${item.score !== null ? item.score.toFixed(1) + '%' : '—'}</span>
-          ${item.score !== null ? `<button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="viewBatchResult(${i})">View</button>` : ''}
+        <div class="stat-card">
+          <div class="stat-number" style="color: #f24822;">${stats.errors || 0}</div>
+          <div class="stat-label">errors</div>
         </div>
-      `).join('');
+        <div class="stat-card">
+          <div class="stat-number" style="color: #ffb800;">${stats.warnings || 0}</div>
+          <div class="stat-label">warnings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">${stats.totalIssues || 0}</div>
+          <div class="stat-label">total issues</div>
+        </div>
+      </div>
+    </div>
 
-      // Enable run button
-      const runBtn = $('#runBatchBtn');
-      if (runBtn) runBtn.disabled = false;
+    <div class="report-export-bar">
+      <button class="btn btn-secondary btn-small" onclick="exportReport('markdown')">Copy as Markdown</button>
+      <button class="btn btn-secondary btn-small" onclick="exportReport('text')">Copy as Text</button>
+      <button class="btn btn-secondary btn-small" onclick="exportReport('json')">Copy as JSON</button>
+    </div>
 
-      // Update URLs on input change
-      container.querySelectorAll('.batch-url').forEach(input => {
-        input.addEventListener('change', (e) => {
-          const idx = parseInt(e.target.dataset.index);
-          state.batchItems[idx].url = e.target.value;
-        });
-      });
-    }
-
-    window.runBatch = async function() {
-      const server = serverUrl.value.trim();
-      const scale = parseInt($('#scaleSelect').value);
-      const threshold = parseFloat($('#thresholdInput').value);
-      const detectAA = $('#aaSelect').value === 'true';
-      const delay = parseInt($('#delayInput').value);
-      const hideSelectors = $('#hideSelectors').value.trim();
-
-      // Update URLs from inputs
-      document.querySelectorAll('.batch-url').forEach(input => {
-        const idx = parseInt(input.dataset.index);
-        state.batchItems[idx].url = input.value;
-      });
-
-      const items = state.batchItems.filter(item => item.url.trim());
-      if (items.length === 0) {
-        showError('No URLs specified. Enter URLs for the frames you want to compare.');
-        return;
-      }
-
-      showProgress(`Batch comparison: 0 / ${items.length}`);
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (!item.url.trim()) continue;
-
-        item.status = 'running';
-        renderBatchItems();
-        progressText.textContent = `Comparing ${i + 1} / ${items.length}: ${item.name}`;
-
-        try {
-          const base64Frame = uint8ToBase64(item.data);
-
-          const response = await fetch(`${server}/compare`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              url: item.url,
-              figmaImage: base64Frame,
-              viewport: { width: item.width, height: item.height },
-              scale: scale,
-              threshold: threshold,
-              includeAA: detectAA,
-              delay: delay,
-              hideSelectors: hideSelectors || undefined,
-              fullPage: true,
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-          }
-
-          const result = await response.json();
-          item.score = result.matchPercent;
-          item.screenshotData = result.screenshot;
-          item.diffData = result.diff;
-          item.figmaBase64 = base64Frame;
-          item.status = 'done';
-          item.mismatchedPixels = result.mismatchedPixels;
-          item.totalPixels = result.totalPixels;
-        } catch (err) {
-          item.status = 'error';
-          item.errorMessage = err.message;
-        }
-
-        renderBatchItems();
-      }
-
-      hideProgress();
-      showBatchSummary(items);
-    };
-
-    function showBatchSummary(items) {
-      const summary = $('#batchSummary');
-      if (!summary) return;
-
-      const completed = items.filter(i => i.status === 'done');
-      const errors = items.filter(i => i.status === 'error');
-      const avgScore = completed.length
-        ? (completed.reduce((sum, i) => sum + i.score, 0) / completed.length)
-        : 0;
-
-      summary.classList.remove('hidden');
-      summary.innerHTML = `
-        <strong>Batch Summary</strong><br>
-        Compared: ${completed.length} / ${items.length} frames<br>
-        ${errors.length > 0 ? `Errors: ${errors.length}<br>` : ''}
-        Average match: <span class="match-score ${avgScore >= 95 ? 'good' : avgScore >= 80 ? 'ok' : 'bad'}">${avgScore.toFixed(1)}%</span>
-        <br><br>
-        ${completed.sort((a,b) => a.score - b.score).map(item =>
-          `<span style="display: inline-block; margin: 2px 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: ${item.score >= 95 ? '#d4edda' : item.score >= 80 ? '#fff3cd' : '#f8d7da'};">${truncate(item.name, 15)}: ${item.score.toFixed(1)}%</span>`
+    ${issues.length > 0 ? `
+      <div class="report-filters" id="reportFilters">
+        <span class="filter-btn active" data-filter="all" onclick="filterIssues('all')">All (${issues.length})</span>
+        ${Object.entries(typeCounts).map(([type, count]) =>
+          `<span class="filter-btn" data-filter="${type}" onclick="filterIssues('${type}')">${type} (${count})</span>`
         ).join('')}
-      `;
+      </div>
+    ` : ''}
+
+    <div id="issuesList">
+      ${issues.length === 0
+        ? '<p style="color: #999; text-align: center; padding: 20px;">No specific issues detected. Check the pixel diff for visual differences.</p>'
+        : issues.map(renderIssue).join('')}
+    </div>
+  `;
+}
+
+function renderIssue(issue) {
+  return `
+    <div class="issue-card ${issue.severity}" data-type="${issue.type}">
+      <div class="issue-header">
+        <span class="issue-type ${issue.type}">${issue.type}</span>
+        <span class="issue-severity ${issue.severity}">${issue.severity}</span>
+      </div>
+      <div class="issue-message">${escapeHtml(issue.message)}</div>
+      <div class="issue-detail">
+        ${issue.element ? `<span>Element: <code>${escapeHtml(issue.element)}</code></span>` : ''}
+        ${issue.property ? `<span>Property: <code>${issue.property}</code></span>` : ''}
+        ${issue.expected ? `<span>Expected: <code>${issue.expected}</code></span>` : ''}
+        ${issue.actual ? `<span>Actual: <code>${issue.actual}</code></span>` : ''}
+      </div>
+      ${issue.text ? `<div class="issue-detail" style="margin-top: 2px;">Text: "${escapeHtml(issue.text.slice(0, 80))}"</div>` : ''}
+    </div>
+  `;
+}
+
+window.filterIssues = function(type) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === type));
+  document.querySelectorAll('.issue-card').forEach(card => {
+    card.classList.toggle('hidden', type !== 'all' && card.dataset.type !== type);
+  });
+};
+
+window.exportReport = function(format) {
+  const r = state.reportData;
+  if (!r) return;
+  let text = '';
+
+  if (format === 'json') {
+    text = JSON.stringify(r, null, 2);
+  } else if (format === 'markdown') {
+    text = `# Design Review Report\n\n`;
+    text += `**Pixel match:** ${r.stats?.matchPercent || '—'}%\n`;
+    text += `**Issues:** ${r.stats?.totalIssues || 0} (${r.stats?.errors || 0} errors, ${r.stats?.warnings || 0} warnings)\n\n`;
+    if (r.issues?.length) {
+      text += `## Issues\n\n`;
+      for (const i of r.issues) {
+        const icon = i.severity === 'error' ? '🔴' : i.severity === 'warning' ? '🟡' : '🔵';
+        text += `${icon} **[${i.type}]** ${i.message}\n`;
+        if (i.element) text += `   - Element: \`${i.element}\`\n`;
+        if (i.expected) text += `   - Expected: \`${i.expected}\` → Actual: \`${i.actual}\`\n`;
+        text += `\n`;
+      }
     }
-
-    window.viewBatchResult = function(index) {
-      const item = state.batchItems[index];
-      if (!item || !item.screenshotData) return;
-
-      // Display like a single comparison
-      state.screenshotData = item.screenshotData;
-      state.diffData = item.diffData;
-      state.matchPercent = item.score;
-
-      $('#imgDesign').src = `data:image/png;base64,${item.figmaBase64}`;
-      $('#imgScreenshot').src = `data:image/png;base64,${item.screenshotData}`;
-      $('#imgDiff').src = `data:image/png;base64,${item.diffData}`;
-      $('#imgOverlayBottom').src = `data:image/png;base64,${item.screenshotData}`;
-      $('#imgOverlayTop').src = `data:image/png;base64,${item.figmaBase64}`;
-
-      const score = item.score;
-      scoreDisplay.classList.remove('hidden');
-      scoreDisplay.innerHTML = `<span class="match-score ${score >= 95 ? 'good' : score >= 80 ? 'ok' : 'bad'}">${score.toFixed(1)}% match</span>` +
-        `<span style="margin-left: 8px; font-size: 11px;">${item.name}</span>`;
-
-      emptyState.classList.add('hidden');
-      showView('side-by-side');
-      initSlider();
-    };
-
-    // ─── Compare Button ───
-    compareBtn.addEventListener('click', () => {
-      if (state.selectedFrames.length !== 1) {
-        showError('Select exactly one frame in Figma');
-        return;
+  } else {
+    text = `DESIGN REVIEW REPORT\n`;
+    text += `====================\n\n`;
+    text += `Pixel match: ${r.stats?.matchPercent || '—'}%\n`;
+    text += `Issues: ${r.stats?.totalIssues || 0} (${r.stats?.errors || 0} errors, ${r.stats?.warnings || 0} warnings)\n\n`;
+    if (r.issues?.length) {
+      for (const i of r.issues) {
+        text += `[${i.severity.toUpperCase()}] [${i.type}] ${i.message}\n`;
+        if (i.element) text += `  Element: ${i.element}\n`;
+        if (i.expected) text += `  Expected: ${i.expected} → Actual: ${i.actual}\n`;
+        text += `\n`;
       }
-      if (!urlInput.value.trim()) {
-        showError('Enter a URL to compare with');
-        return;
-      }
+    }
+  }
 
-      showProgress('Exporting frame from Figma...');
-      postToPlugin({
-        type: 'export-frame',
-        scale: parseInt($('#scaleSelect').value)
+  navigator.clipboard.writeText(text).then(() => {
+    postToPlugin({ type: 'notify', message: `Report copied as ${format}!` });
+  });
+};
+
+// ─── View Switching ───
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => showView(tab.dataset.view));
+});
+
+function showView(viewName) {
+  state.currentView = viewName;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === viewName));
+  document.querySelectorAll('.compare-container').forEach(c => c.classList.remove('active'));
+  const map = { 'side-by-side': 'viewSideBySide', 'overlay': 'viewOverlay', 'diff': 'viewDiff', 'report': 'viewReport', 'batch': 'viewBatch' };
+  const el = $(`#${map[viewName]}`);
+  if (el) el.classList.add('active');
+  if (viewName === 'overlay') requestAnimationFrame(() => initSlider());
+}
+
+// ─── Slider ───
+function initSlider() {
+  const slider = $('#sliderControl');
+  const stack = $('#imgStack');
+  if (!slider || !stack) return;
+  updateSlider(state.sliderPos);
+  let dragging = false;
+  slider.onmousedown = (e) => { dragging = true; e.preventDefault(); };
+  document.onmousemove = (e) => {
+    if (!dragging) return;
+    const rect = stack.getBoundingClientRect();
+    state.sliderPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    updateSlider(state.sliderPos);
+  };
+  document.onmouseup = () => { dragging = false; };
+}
+
+function updateSlider(pos) {
+  const slider = $('#sliderControl');
+  const imgTop = $('#imgOverlayTop');
+  const stack = $('#imgStack');
+  if (!slider || !imgTop || !stack) return;
+  slider.style.left = (pos * stack.offsetWidth) + 'px';
+  imgTop.style.clipPath = `inset(0 ${(1 - pos) * 100}% 0 0)`;
+}
+
+// ─── Buttons ───
+compareBtn.addEventListener('click', () => {
+  if (state.selectedFrames.length !== 1 || !urlInput.value.trim()) return;
+  state.reviewMode = false;
+  showProgress('Exporting frame...');
+  postToPlugin({ type: 'export-frame', scale: parseInt($('#scaleSelect').value) });
+});
+
+reviewBtn.addEventListener('click', () => {
+  if (state.selectedFrames.length !== 1 || !urlInput.value.trim()) return;
+  state.reviewMode = true;
+  showProgress('Exporting frame with design properties...');
+  postToPlugin({ type: 'export-frame-with-props', scale: parseInt($('#scaleSelect').value) });
+});
+
+urlInput.addEventListener('input', () => {
+  const ok = urlInput.value.trim() && state.selectedFrames.length === 1;
+  compareBtn.disabled = reviewBtn.disabled = !ok;
+});
+
+urlInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !reviewBtn.disabled) reviewBtn.click();
+});
+
+// ─── Batch ───
+batchBtn.addEventListener('click', () => { showView('batch'); setupBatchMode(); });
+
+function setupBatchMode() {
+  postToPlugin({ type: 'get-selection' });
+  setTimeout(() => buildBatchList(), 200);
+}
+
+function buildBatchList() {
+  const list = $('#batchList');
+  const baseUrl = urlInput.value.trim();
+  list.innerHTML = `
+    <div style="padding: 8px;">
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+        <label style="font-weight: 600;">Base URL:</label>
+        <input type="text" id="batchBaseUrl" value="${baseUrl}" placeholder="https://example.com" style="flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px;" />
+        <button class="btn btn-secondary" onclick="loadBatchFrames()">Load Frames</button>
+        <button class="btn btn-review" id="runBatchBtn" onclick="runBatch()" disabled>Review All</button>
+      </div>
+      <div id="batchFramesList"><p style="color: #999; text-align: center;">Click "Load Frames"</p></div>
+      <div id="batchSummary" class="hidden" style="margin-top: 12px;"></div>
+    </div>
+  `;
+}
+
+window.loadBatchFrames = function() {
+  postToPlugin({ type: 'export-all-frames-with-props', scale: parseInt($('#scaleSelect').value) });
+};
+
+function handleBatchExportStart(msg) {
+  state.batchItems = [];
+  showProgress(`Exporting frames: 0/${msg.total}`);
+}
+
+function handleBatchFrameExported(msg) {
+  state.batchItems.push({
+    id: msg.id, name: msg.name, width: msg.width, height: msg.height,
+    scale: msg.scale, data: new Uint8Array(msg.data),
+    designData: msg.designData || null,
+    url: '', score: null, status: 'pending',
+  });
+  progressText.textContent = `Exporting: ${msg.index + 1}/${msg.total}`;
+}
+
+function handleBatchExportDone() {
+  hideProgress();
+  renderBatchItems();
+}
+
+function renderBatchItems() {
+  const c = $('#batchFramesList');
+  if (!c) return;
+  const baseUrl = ($('#batchBaseUrl') || {}).value || '';
+
+  c.innerHTML = state.batchItems.map((item, i) => `
+    <div class="batch-item" data-index="${i}">
+      <span class="frame-name" title="${item.name}">${trunc(item.name, 18)}</span>
+      <span style="color:#999;font-size:11px;min-width:65px">${item.width}×${item.height}</span>
+      <input type="text" class="batch-url" data-index="${i}" value="${item.url || guessUrl(baseUrl, item.name)}" placeholder="https://..." />
+      <span class="batch-status ${item.status}">${statusLabel(item.status)}</span>
+      <span class="batch-score">${item.score !== null ? item.score.toFixed(1) + '%' : '—'}</span>
+      ${item.report ? `<button class="btn btn-secondary btn-small" onclick="viewBatchReport(${i})">Report</button>` : ''}
+      ${item.score !== null ? `<button class="btn btn-secondary btn-small" onclick="viewBatchResult(${i})">View</button>` : ''}
+    </div>
+  `).join('');
+
+  const runBtn = $('#runBatchBtn');
+  if (runBtn) runBtn.disabled = false;
+
+  c.querySelectorAll('.batch-url').forEach(input => {
+    input.addEventListener('change', (e) => {
+      state.batchItems[parseInt(e.target.dataset.index)].url = e.target.value;
+    });
+  });
+}
+
+window.runBatch = async function() {
+  const server = serverUrl.value.trim();
+  document.querySelectorAll('.batch-url').forEach(input => {
+    state.batchItems[parseInt(input.dataset.index)].url = input.value;
+  });
+
+  const items = state.batchItems.filter(item => item.url.trim());
+  if (!items.length) { showError('Enter URLs for frames'); return; }
+
+  showProgress(`Review: 0/${items.length}`);
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    item.status = 'running';
+    renderBatchItems();
+    progressText.textContent = `Review ${i + 1}/${items.length}: ${item.name}`;
+
+    try {
+      const base64Frame = uint8ToBase64(item.data);
+      const endpoint = item.designData ? '/review' : '/compare';
+      const body = {
+        url: item.url, figmaImage: base64Frame,
+        viewport: { width: item.width, height: item.height },
+        scale: parseInt($('#scaleSelect').value),
+        threshold: parseFloat($('#thresholdInput').value),
+        includeAA: $('#aaSelect').value === 'true',
+        delay: parseInt($('#delayInput').value),
+        hideSelectors: $('#hideSelectors').value.trim() || undefined,
+        fullPage: true,
+      };
+      if (item.designData) body.designData = item.designData;
+
+      const response = await fetch(`${server}${endpoint}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
-    });
 
-    urlInput.addEventListener('input', () => {
-      compareBtn.disabled = !urlInput.value.trim() || state.selectedFrames.length !== 1;
-    });
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const result = await response.json();
 
-    // Enter key to compare
-    urlInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !compareBtn.disabled) {
-        compareBtn.click();
+      item.score = result.matchPercent;
+      item.screenshotData = result.screenshot;
+      item.diffData = result.diff;
+      item.figmaBase64 = base64Frame;
+      item.report = result.report || null;
+      item.status = 'done';
+    } catch (err) {
+      item.status = 'error';
+      item.errorMessage = err.message;
+    }
+    renderBatchItems();
+  }
+
+  hideProgress();
+  showBatchSummary(items);
+};
+
+function showBatchSummary(items) {
+  const s = $('#batchSummary');
+  if (!s) return;
+
+  const done = items.filter(i => i.status === 'done');
+  const errs = items.filter(i => i.status === 'error');
+  const avg = done.length ? done.reduce((sum, i) => sum + i.score, 0) / done.length : 0;
+  const totalIssues = done.reduce((sum, i) => sum + (i.report?.stats?.totalIssues || 0), 0);
+
+  s.classList.remove('hidden');
+  s.innerHTML = `
+    <div class="report-summary">
+      <strong>Batch Summary</strong><br>
+      Compared: ${done.length}/${items.length} | Errors: ${errs.length}<br>
+      Average match: <span class="match-score ${avg >= 95 ? 'good' : avg >= 80 ? 'ok' : 'bad'}">${avg.toFixed(1)}%</span>
+      ${totalIssues > 0 ? ` | Total issues found: <strong>${totalIssues}</strong>` : ''}
+      <div style="margin-top: 8px;">
+        ${done.sort((a,b) => a.score - b.score).map(i =>
+          `<span style="display:inline-block;margin:2px 4px;padding:2px 8px;border-radius:4px;font-size:11px;background:${i.score >= 95 ? '#d4edda' : i.score >= 80 ? '#fff3cd' : '#f8d7da'}">` +
+          `${trunc(i.name, 15)}: ${i.score.toFixed(1)}%${i.report?.stats?.totalIssues ? ` (${i.report.stats.totalIssues} issues)` : ''}</span>`
+        ).join('')}
+      </div>
+      <div style="margin-top: 8px;">
+        <button class="btn btn-secondary btn-small" onclick="exportBatchReport()">Copy Full Report (Markdown)</button>
+      </div>
+    </div>
+  `;
+}
+
+window.viewBatchResult = function(idx) {
+  const item = state.batchItems[idx];
+  if (!item?.screenshotData) return;
+
+  $('#imgDesign').src = `data:image/png;base64,${item.figmaBase64}`;
+  $('#imgScreenshot').src = `data:image/png;base64,${item.screenshotData}`;
+  $('#imgDiff').src = `data:image/png;base64,${item.diffData}`;
+  $('#imgOverlayBottom').src = `data:image/png;base64,${item.screenshotData}`;
+  $('#imgOverlayTop').src = `data:image/png;base64,${item.figmaBase64}`;
+
+  scoreDisplay.classList.remove('hidden');
+  scoreDisplay.innerHTML = `<span class="match-score ${item.score >= 95 ? 'good' : item.score >= 80 ? 'ok' : 'bad'}">${item.score.toFixed(1)}%</span> <span style="font-size:11px;">${item.name}</span>`;
+  emptyState.classList.add('hidden');
+  showView('side-by-side');
+  initSlider();
+};
+
+window.viewBatchReport = function(idx) {
+  const item = state.batchItems[idx];
+  if (!item?.report) return;
+  state.reportData = item.report;
+  displayReport({ report: item.report, matchPercent: item.score });
+  showView('report');
+};
+
+window.exportBatchReport = function() {
+  const items = state.batchItems.filter(i => i.status === 'done');
+  let md = `# Batch Design Review Report\n\n`;
+  md += `**Total pages reviewed:** ${items.length}\n\n`;
+
+  for (const item of items) {
+    md += `## ${item.name} — ${item.width}×${item.height}\n`;
+    md += `**URL:** ${item.url}\n`;
+    md += `**Pixel match:** ${item.score?.toFixed(1)}%\n`;
+
+    if (item.report?.issues?.length) {
+      md += `**Issues:** ${item.report.stats?.totalIssues || 0}\n\n`;
+      for (const i of item.report.issues) {
+        const icon = i.severity === 'error' ? '🔴' : i.severity === 'warning' ? '🟡' : '🔵';
+        md += `${icon} **[${i.type}]** ${i.message}\n`;
+        if (i.element) md += `   - Element: \`${i.element}\`\n`;
+        if (i.expected) md += `   - Expected: \`${i.expected}\` → Actual: \`${i.actual}\`\n`;
       }
-    });
-
-    // ─── Utilities ───
-    function uint8ToBase64(uint8) {
-      let binary = '';
-      const len = uint8.length;
-      const chunkSize = 8192;
-      for (let i = 0; i < len; i += chunkSize) {
-        const chunk = uint8.subarray(i, Math.min(i + chunkSize, len));
-        binary += String.fromCharCode.apply(null, chunk);
-      }
-      return btoa(binary);
+    } else {
+      md += `**Issues:** 0\n`;
     }
+    md += `\n---\n\n`;
+  }
 
-    function showProgress(text) {
-      progressOverlay.classList.remove('hidden');
-      progressText.textContent = text;
-    }
+  navigator.clipboard.writeText(md).then(() => {
+    postToPlugin({ type: 'notify', message: 'Full batch report copied!' });
+  });
+};
 
-    function hideProgress() {
-      progressOverlay.classList.add('hidden');
-    }
+// ─── Utilities ───
+function uint8ToBase64(uint8) {
+  let bin = '';
+  for (let i = 0; i < uint8.length; i += 8192) {
+    bin += String.fromCharCode.apply(null, uint8.subarray(i, Math.min(i + 8192, uint8.length)));
+  }
+  return btoa(bin);
+}
 
-    function showError(msg) {
-      postToPlugin({ type: 'notify', message: msg, timeout: 4000 });
-    }
+function showProgress(text) { progressOverlay.classList.remove('hidden'); progressText.textContent = text; }
+function hideProgress() { progressOverlay.classList.add('hidden'); }
+function showError(msg) { postToPlugin({ type: 'notify', message: msg, timeout: 4000 }); }
+function trunc(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
+function statusLabel(s) { return { pending:'Waiting', running:'Running...', done:'Done', error:'Error' }[s] || s; }
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    function truncate(str, len) {
-      return str.length > len ? str.slice(0, len) + '...' : str;
-    }
+function guessUrl(base, name) {
+  if (!base) return '';
+  const b = base.replace(/\/$/, '');
+  const n = name.toLowerCase().trim();
+  if (['home','main','homepage','index','главная'].some(k => n.includes(k))) return b + '/';
+  const slug = n.replace(/\s*[-–—/|]\s*/g, '/').replace(/[^a-z0-9/]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  return slug ? b + '/' + slug : b + '/';
+}
 
-    function statusLabel(status) {
-      return { pending: 'Waiting', running: 'Running...', done: 'Done', error: 'Error' }[status] || status;
-    }
-
-    function guessUrl(baseUrl, frameName) {
-      if (!baseUrl) return '';
-      // Try to guess URL from frame name
-      const name = frameName.toLowerCase().trim();
-      const base = baseUrl.replace(/\/$/, '');
-
-      if (name === 'home' || name === 'main' || name === 'homepage' || name === 'index' || name.includes('главная')) {
-        return base + '/';
-      }
-      // Convert frame name to URL slug
-      const slug = name
-        .replace(/\s*[-–—/|]\s*/g, '/')
-        .replace(/[^a-z0-9/]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-
-      if (slug) return base + '/' + slug;
-      return base + '/';
-    }
-
-    // ─── Init ───
-    postToPlugin({ type: 'get-selection' });
-  </script>
+postToPlugin({ type: 'get-selection' });
+</script>
 </body>
 </html>
