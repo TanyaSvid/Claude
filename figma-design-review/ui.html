@@ -479,16 +479,44 @@ function handleFrameExportedWithProps(msg) {
   runFullReview();
 }
 
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs || 60000);
+  try {
+    const resp = await fetch(url, { ...options, signal: controller.signal });
+    return resp;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function checkServer(server) {
+  try {
+    const resp = await fetchWithTimeout(`${server}/health`, {}, 5000);
+    return resp.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function runComparison() {
   const url = urlInput.value.trim();
   const server = serverUrl.value.trim();
   const frame = state.currentFrameData;
   if (!url || !frame) return;
 
+  showProgress('Checking server connection...');
+  const serverOk = await checkServer(server);
+  if (!serverOk) {
+    showError(`Server not reachable at ${server}. Make sure to run: cd server && npm install && npm start`);
+    hideProgress();
+    return;
+  }
+
   showProgress('Taking screenshot and comparing...');
   try {
     const base64Frame = uint8ToBase64(frame.data);
-    const response = await fetch(`${server}/compare`, {
+    const response = await fetchWithTimeout(`${server}/compare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -501,7 +529,7 @@ async function runComparison() {
         hideSelectors: $('#hideSelectors').value.trim() || undefined,
         fullPage: true,
       })
-    });
+    }, 120000);
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -511,7 +539,11 @@ async function runComparison() {
     const result = await response.json();
     displayPixelResults(result, base64Frame);
   } catch (err) {
-    showError(`Comparison failed: ${err.message}`);
+    if (err.name === 'AbortError') {
+      showError('Request timed out. The page may be too large or the server is overloaded.');
+    } else {
+      showError(`Comparison failed: ${err.message}`);
+    }
   } finally {
     hideProgress();
   }
@@ -523,10 +555,18 @@ async function runFullReview() {
   const frame = state.currentFrameData;
   if (!url || !frame) return;
 
+  showProgress('Checking server connection...');
+  const serverOk = await checkServer(server);
+  if (!serverOk) {
+    showError(`Server not reachable at ${server}. Make sure to run: cd server && npm install && npm start`);
+    hideProgress();
+    return;
+  }
+
   showProgress('Full review: screenshot + CSS extraction + comparison...');
   try {
     const base64Frame = uint8ToBase64(frame.data);
-    const response = await fetch(`${server}/review`, {
+    const response = await fetchWithTimeout(`${server}/review`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -540,7 +580,7 @@ async function runFullReview() {
         fullPage: true,
         designData: frame.designData || null,
       })
-    });
+    }, 120000);
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -552,7 +592,11 @@ async function runFullReview() {
     displayReport(result);
     showView('report');
   } catch (err) {
-    showError(`Review failed: ${err.message}`);
+    if (err.name === 'AbortError') {
+      showError('Request timed out. The page may be too large or the server is overloaded.');
+    } else {
+      showError(`Review failed: ${err.message}`);
+    }
   } finally {
     hideProgress();
   }
@@ -859,6 +903,14 @@ window.runBatch = async function() {
   const items = state.batchItems.filter(item => item.url.trim());
   if (!items.length) { showError('Enter URLs for frames'); return; }
 
+  showProgress('Checking server connection...');
+  const serverOk = await checkServer(server);
+  if (!serverOk) {
+    showError(`Server not reachable at ${server}. Make sure to run: cd server && npm install && npm start`);
+    hideProgress();
+    return;
+  }
+
   showProgress(`Review: 0/${items.length}`);
 
   for (let i = 0; i < items.length; i++) {
@@ -882,10 +934,10 @@ window.runBatch = async function() {
       };
       if (item.designData) body.designData = item.designData;
 
-      const response = await fetch(`${server}${endpoint}`, {
+      const response = await fetchWithTimeout(`${server}${endpoint}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-      });
+      }, 120000);
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const result = await response.json();

@@ -6,7 +6,7 @@
   "ui": "ui.html",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["http://localhost"],
+    "allowedDomains": ["*"],
     "reasoning": "Communicates with local comparison server to screenshot websites and compare with Figma frames"
   }
 }
