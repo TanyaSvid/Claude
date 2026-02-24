@@ -1,0 +1,12 @@
+{
+  "name": "Design Review — Compare with Live Site",
+  "id": "design-review-compare-live",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["localhost"],
+    "reasoning": "Communicates with local comparison server to screenshot websites and compare with Figma frames"
+  }
+}
