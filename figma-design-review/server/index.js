@@ -15,10 +15,32 @@ let browser = null;
 
 async function getBrowser() {
   if (!browser || !browser.connected) {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-    });
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-extensions',
+          '--disable-background-networking',
+          '--disable-default-apps',
+        ],
+        timeout: 30000,
+      });
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('WS endpoint') || msg.includes('ENOENT') || msg.includes('spawn')) {
+        throw new Error(
+          'Could not launch browser. Chromium may not be installed.\n' +
+          'Run this command to fix it:\n' +
+          '  npx puppeteer browsers install chrome\n' +
+          'Or on Mac: brew install --cask chromium'
+        );
+      }
+      throw err;
+    }
   }
   return browser;
 }
@@ -191,8 +213,13 @@ app.post('/screenshot', async (req, res) => {
 // ═══════════════════════════════════════════
 //  GET /health
 // ═══════════════════════════════════════════
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: '2.0.0' });
+app.get('/health', async (req, res) => {
+  try {
+    await getBrowser();
+    res.json({ status: 'ok', version: '2.0.0', browser: 'ready' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
+  }
 });
 
 
@@ -780,13 +807,22 @@ async function hideElements(page, selectors) {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── Start ───
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`\n  Design Review Server v2.0 — http://localhost:${PORT}`);
   console.log(`  ────────────────────────────────────────────────────`);
   console.log(`  POST /compare     — Pixel comparison only`);
   console.log(`  POST /review      — Full review (pixel + CSS + report)`);
   console.log(`  POST /screenshot  — Screenshot only`);
   console.log(`  GET  /health      — Health check\n`);
+
+  // Pre-launch browser to catch errors early
+  try {
+    console.log('  Launching browser...');
+    await getBrowser();
+    console.log('  Browser ready!\n');
+  } catch (err) {
+    console.error('\n  ERROR: ' + err.message + '\n');
+  }
 });
 
 process.on('SIGINT', async () => { if (browser) await browser.close(); process.exit(0); });
