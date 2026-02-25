@@ -10,6 +10,10 @@
 //    get_site_styles  — Extract CSS from live site
 // ═══════════════════════════════════════════
 
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -18,6 +22,21 @@ import { parseFigmaUrl, fetchFigmaFile, extractDesignTokens } from './figma-api.
 import { extractSiteElements, closeBrowser } from './site-extractor.js';
 import { compareDesignWithSite } from './comparator.js';
 import { generateDesignerReport, generateStructuredReport } from './designer-report.js';
+
+// ─── Load .env file if present ───
+try {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const envFile = readFileSync(join(__dirname, '.env'), 'utf-8');
+  for (const line of envFile.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const val = trimmed.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '');
+    if (!process.env[key]) process.env[key] = val;
+  }
+} catch { /* no .env file — that's fine */ }
 
 const server = new McpServer({
   name: 'figma-design-review',
