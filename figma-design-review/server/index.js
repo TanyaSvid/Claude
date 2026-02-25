@@ -134,6 +134,8 @@ app.post('/review', async (req, res) => {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     if (delay > 0) await sleep(delay);
 
+    await dismissPopups(page);
+
     if (hideSelectors) {
       await hideElements(page, hideSelectors);
     }
@@ -233,11 +235,163 @@ async function takeScreenshot({ url, width, height, scale, delay, hideSelectors,
     await page.setViewport({ width, height, deviceScaleFactor: scale });
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     if (delay > 0) await sleep(delay);
+    await dismissPopups(page);
     if (hideSelectors) await hideElements(page, hideSelectors);
     return Buffer.from(await page.screenshot({ type: 'png', fullPage }));
   } finally {
     await page.close();
   }
+}
+
+// ─────────────────────────────────────────
+//  DISMISS POPUPS / OVERLAYS / MODALS
+//  Removes cookie banners, newsletter popups,
+//  and any full-screen overlays before screenshot
+// ─────────────────────────────────────────
+async function dismissPopups(page) {
+  // Step 1: Try clicking common "close" / "accept" buttons
+  const closed = await page.evaluate(() => {
+    let closed = 0;
+
+    // Common close-button selectors
+    const closeSelectors = [
+      // Cookie consent
+      '[class*="cookie"] button',
+      '[id*="cookie"] button',
+      '[class*="consent"] button',
+      '[id*="consent"] button',
+      '[class*="cookie"] [class*="close"]',
+      '[class*="cookie"] [class*="accept"]',
+      '[class*="cookie"] [class*="dismiss"]',
+      '[class*="gdpr"] button',
+      // Generic modals / popups
+      '[class*="modal"] [class*="close"]',
+      '[class*="popup"] [class*="close"]',
+      '[class*="overlay"] [class*="close"]',
+      '[class*="dialog"] [class*="close"]',
+      '[class*="modal"] button[aria-label*="close" i]',
+      '[class*="popup"] button[aria-label*="close" i]',
+      '[role="dialog"] button[aria-label*="close" i]',
+      '[role="dialog"] [class*="close"]',
+      // Close buttons by aria
+      'button[aria-label*="Close" i]',
+      'button[aria-label*="Dismiss" i]',
+      'button[aria-label*="Accept" i]',
+      // Common class patterns
+      '.close-button', '.btn-close', '.close-btn',
+      '.modal-close', '.popup-close',
+      '[class*="CloseButton"]',
+      '[class*="closeButton"]',
+      '[class*="close-button"]',
+      // Newsletter / subscription popups
+      '[class*="newsletter"] [class*="close"]',
+      '[class*="subscribe"] [class*="close"]',
+      '[class*="signup"] [class*="close"]',
+    ];
+
+    for (const sel of closeSelectors) {
+      try {
+        const buttons = document.querySelectorAll(sel);
+        for (const btn of buttons) {
+          if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
+            btn.click();
+            closed++;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    // Also try clicking buttons whose text says accept/close/dismiss
+    const allButtons = document.querySelectorAll('button, [role="button"], a.btn, a.button');
+    const acceptWords = /^(accept|accept all|agree|got it|ok|okay|i agree|i understand|close|dismiss|no thanks|not now|maybe later|decline|reject all)$/i;
+    for (const btn of allButtons) {
+      const text = (btn.textContent || '').trim();
+      if (text.length < 30 && acceptWords.test(text) && btn.offsetWidth > 0) {
+        btn.click();
+        closed++;
+      }
+    }
+
+    return closed;
+  });
+
+  // Wait a bit for animations to finish after clicking
+  if (closed > 0) {
+    await sleep(500);
+  }
+
+  // Step 2: Force-remove any remaining full-screen overlays
+  const removed = await page.evaluate(() => {
+    let removed = 0;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+
+    const allElements = document.querySelectorAll('body > *, body > * > *');
+
+    for (const el of allElements) {
+      const style = window.getComputedStyle(el);
+      const pos = style.position;
+      const zIndex = parseInt(style.zIndex) || 0;
+      const rect = el.getBoundingClientRect();
+
+      // Skip tiny or invisible elements
+      if (rect.width < 100 || rect.height < 100) continue;
+      // Skip the main content containers
+      const tag = el.tagName.toLowerCase();
+      if (['html', 'body', 'main', 'header', 'footer', 'nav', 'script', 'style', 'noscript'].includes(tag)) continue;
+
+      const coversScreen =
+        rect.width >= viewW * 0.8 &&
+        rect.height >= viewH * 0.8;
+
+      const isOverlay =
+        (pos === 'fixed' || pos === 'absolute' || pos === 'sticky') &&
+        zIndex >= 10 &&
+        coversScreen;
+
+      // Check for semi-transparent backdrop overlays
+      const bg = style.backgroundColor;
+      const opacity = parseFloat(style.opacity);
+      const isBackdrop =
+        (pos === 'fixed' || pos === 'absolute') &&
+        coversScreen &&
+        (opacity < 0.95 || (bg && bg.includes('rgba') && !bg.includes('rgba(0, 0, 0, 0)')));
+
+      if (isOverlay || isBackdrop) {
+        el.remove();
+        removed++;
+      }
+    }
+
+    // Also remove elements with very high z-index that look like modals
+    const highZ = document.querySelectorAll('[style*="z-index"]');
+    for (const el of highZ) {
+      const style = window.getComputedStyle(el);
+      const z = parseInt(style.zIndex) || 0;
+      const pos = style.position;
+      if (z >= 1000 && (pos === 'fixed' || pos === 'absolute')) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > viewW * 0.3 && rect.height > viewH * 0.3) {
+          el.remove();
+          removed++;
+        }
+      }
+    }
+
+    // Remove leftover body scroll locks
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.position = '';
+
+    return removed;
+  });
+
+  if (removed > 0) {
+    await sleep(300);
+  }
+
+  console.log(`  Popups: ${closed} clicked, ${removed} overlays removed`);
 }
 
 // ─────────────────────────────────────────
