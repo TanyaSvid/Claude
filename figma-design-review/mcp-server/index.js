@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 
 import { parseFigmaUrl, fetchFigmaFile, extractDesignTokens } from './figma-api.js';
 import { extractSiteElements, closeBrowser } from './site-extractor.js';
