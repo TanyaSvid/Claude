@@ -1,0 +1,17 @@
+{
+  "name": "figma-design-review-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for comparing Figma designs with live websites — no screenshots, real data comparison",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "figma-design-review": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "puppeteer": "^24.2.1"
+  }
+}
