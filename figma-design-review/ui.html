@@ -219,6 +219,30 @@
       padding: 1px 4px; border-radius: 3px; font-size: 11px;
     }
 
+    .designer-note {
+      padding: 14px 16px; margin-bottom: 12px;
+      background: linear-gradient(135deg, #f3eeff 0%, #eef6ff 100%);
+      border-radius: 10px;
+      border-left: 4px solid #7b61ff;
+      line-height: 1.7; font-size: 12.5px;
+      color: #333; position: relative;
+    }
+    .designer-note-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px; font-weight: 700; font-size: 13px;
+      color: #5b21b6;
+    }
+    .designer-note p { margin: 4px 0; }
+    .designer-note .dn-section { margin-top: 10px; }
+    .designer-note .dn-section-title { font-weight: 600; color: #5b21b6; margin-bottom: 2px; }
+    .designer-note code {
+      background: rgba(123, 97, 255, 0.1); padding: 1px 5px;
+      border-radius: 3px; font-size: 11.5px;
+    }
+    .designer-note-actions {
+      display: flex; gap: 6px; margin-top: 10px;
+    }
+
     .report-export-bar {
       display: flex; gap: 8px; margin-bottom: 12px;
     }
@@ -640,7 +664,22 @@ function displayReport(result) {
   const typeCounts = {};
   issues.forEach(i => { typeCounts[i.type] = (typeCounts[i.type] || 0) + 1; });
 
+  const designerNoteHtml = generateDesignerNote(r, result.matchPercent);
+
   rv.innerHTML = `
+    ${designerNoteHtml ? `
+      <div class="designer-note">
+        <div class="designer-note-header">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7b61ff" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Комментарий дизайнера
+        </div>
+        ${designerNoteHtml}
+        <div class="designer-note-actions">
+          <button class="btn btn-secondary btn-small" onclick="copyDesignerNote()" style="background: rgba(123,97,255,0.15); color: #5b21b6; border: none;">Скопировать комментарий</button>
+        </div>
+      </div>
+    ` : ''}
+
     <div class="report-summary">
       <strong>Design Review Report</strong>
       <div class="report-stats">
@@ -705,6 +744,178 @@ function renderIssue(issue) {
   `;
 }
 
+// ─── Designer Note Generator (Russian, human-friendly) ───
+function generateDesignerNote(report, matchPercent) {
+  if (!report || !report.issues) return '';
+
+  const issues = report.issues;
+  const stats = report.stats || {};
+  const errors = issues.filter(i => i.severity === 'error');
+  const warnings = issues.filter(i => i.severity === 'warning');
+
+  // Group issues by type
+  const typo = issues.filter(i => i.type === 'typography');
+  const spacing = issues.filter(i => i.type === 'spacing');
+  const colors = issues.filter(i => i.type === 'color');
+  const images = issues.filter(i => i.type === 'image');
+
+  const mp = stats.matchPercent || matchPercent || 0;
+
+  // Opening — depends on how good the result is
+  let greeting;
+  if (mp >= 95 && issues.length === 0) {
+    greeting = 'Привет! Посмотрела вёрстку — всё супер, прям один в один с макетом, красавчики!';
+    return greeting;
+  } else if (mp >= 95) {
+    greeting = 'Привет! В целом вёрстка очень близка к макету, но есть пара мелочей, которые хотелось бы поправить:';
+  } else if (mp >= 85) {
+    greeting = 'Привет! Вёрстка в целом хорошая, но нашла несколько расхождений с макетом — давайте подправим:';
+  } else if (mp >= 70) {
+    greeting = 'Привет! Посмотрела вёрстку и нашла заметные отличия от макета. Вот что нужно поправить:';
+  } else {
+    greeting = 'Привет! Вёрстка пока сильно отличается от макета, давайте пройдёмся по основным моментам:';
+  }
+
+  let html = `<p>${greeting}</p>`;
+
+  // Typography issues
+  if (typo.length > 0) {
+    html += '<div class="dn-section"><div class="dn-section-title">Типографика</div>';
+    for (const i of typo.slice(0, 5)) {
+      const textHint = i.text ? ` (текст «${escapeHtml(i.text.slice(0, 40))}»)` : '';
+      if (i.property === 'font-size') {
+        html += `<p>— Размер шрифта${textHint}: в макете <code>${i.expected}</code>, а на сайте <code>${i.actual}</code></p>`;
+      } else if (i.property === 'font-weight') {
+        const expName = weightName(i.expected);
+        const actName = weightName(i.actual);
+        html += `<p>— Начертание${textHint}: нужно ${expName} <code>${i.expected}</code>, сейчас ${actName} <code>${i.actual}</code></p>`;
+      } else if (i.property === 'line-height') {
+        html += `<p>— Межстрочный интервал${textHint}: в макете <code>${i.expected}</code>, на сайте <code>${i.actual}</code></p>`;
+      } else if (i.property === 'letter-spacing') {
+        html += `<p>— Межбуквенное расстояние${textHint}: ожидалось <code>${i.expected}</code>, сейчас <code>${i.actual}</code></p>`;
+      } else if (i.property === 'text-align') {
+        const alignRu = { left: 'по левому краю', center: 'по центру', right: 'по правому краю', justify: 'по ширине' };
+        html += `<p>— Выравнивание текста${textHint}: должно быть ${alignRu[i.expected] || i.expected}, а стоит ${alignRu[i.actual] || i.actual}</p>`;
+      } else {
+        html += `<p>— ${escapeHtml(i.message)}</p>`;
+      }
+    }
+    if (typo.length > 5) html += `<p>— ...и ещё ${typo.length - 5} замечаний по типографике</p>`;
+    html += '</div>';
+  }
+
+  // Spacing issues
+  if (spacing.length > 0) {
+    html += '<div class="dn-section"><div class="dn-section-title">Отступы и расстояния</div>';
+    for (const i of spacing.slice(0, 5)) {
+      if (i.property === 'gap') {
+        html += `<p>— Расстояние между элементами: в макете <code>${i.expected}</code>, на сайте <code>${i.actual}</code></p>`;
+      } else if (i.property?.startsWith('padding')) {
+        const side = { 'padding-top': 'сверху', 'padding-right': 'справа', 'padding-bottom': 'снизу', 'padding-left': 'слева' }[i.property] || '';
+        html += `<p>— Внутренний отступ ${side}: должен быть <code>${i.expected}</code>, сейчас <code>${i.actual}</code></p>`;
+      } else {
+        html += `<p>— ${escapeHtml(i.message)}</p>`;
+      }
+    }
+    if (spacing.length > 5) html += `<p>— ...и ещё ${spacing.length - 5} замечаний по отступам</p>`;
+    html += '</div>';
+  }
+
+  // Color issues
+  if (colors.length > 0) {
+    html += '<div class="dn-section"><div class="dn-section-title">Цвета</div>';
+    for (const i of colors.slice(0, 4)) {
+      const textHint = i.text ? ` у «${escapeHtml(i.text.slice(0, 40))}»` : '';
+      html += `<p>— Цвет${textHint}: в макете <code>${i.expected}</code>, на сайте <code>${i.actual}</code></p>`;
+    }
+    if (colors.length > 4) html += `<p>— ...и ещё ${colors.length - 4} расхождений по цветам</p>`;
+    html += '</div>';
+  }
+
+  // Image issues
+  if (images.length > 0) {
+    html += '<div class="dn-section"><div class="dn-section-title">Изображения</div>';
+    for (const i of images.slice(0, 3)) {
+      html += `<p>— ${escapeHtml(i.message)}</p>`;
+    }
+    html += '</div>';
+  }
+
+  // Closing
+  if (errors.length > 0 && warnings.length > 0) {
+    html += `<p style="margin-top: 10px;">Итого: <strong>${errors.length}</strong> критичных и <strong>${warnings.length}</strong> мелких замечаний. Давайте сначала критичные поправим, а потом мелочи подтянем.</p>`;
+  } else if (errors.length > 0) {
+    html += `<p style="margin-top: 10px;">Тут <strong>${errors.length}</strong> критичных моментов — их бы в первую очередь поправить.</p>`;
+  } else if (issues.length > 0) {
+    html += `<p style="margin-top: 10px;">В целом некритично, но будет классно если подправим — макет будет pixel perfect!</p>`;
+  }
+
+  return html;
+}
+
+function weightName(w) {
+  const n = parseInt(w);
+  if (n <= 300) return 'тонкое';
+  if (n <= 400) return 'обычное';
+  if (n <= 500) return 'среднее';
+  if (n <= 600) return 'полужирное';
+  if (n <= 700) return 'жирное';
+  return 'сверхжирное';
+}
+
+function getDesignerNoteText(report, matchPercent) {
+  // Plain text version for copying
+  if (!report || !report.issues) return '';
+
+  const issues = report.issues;
+  const stats = report.stats || {};
+  const mp = stats.matchPercent || matchPercent || 0;
+
+  let text = '';
+  if (mp >= 95 && issues.length === 0) {
+    return 'Привет! Посмотрела вёрстку — всё супер, прям один в один с макетом, красавчики!';
+  } else if (mp >= 95) {
+    text = 'Привет! В целом вёрстка очень близка к макету, но есть пара мелочей:\n\n';
+  } else if (mp >= 85) {
+    text = 'Привет! Вёрстка хорошая, но нашла несколько расхождений с макетом:\n\n';
+  } else {
+    text = 'Привет! Посмотрела вёрстку, есть отличия от макета:\n\n';
+  }
+
+  const grouped = {};
+  for (const i of issues) {
+    if (!grouped[i.type]) grouped[i.type] = [];
+    grouped[i.type].push(i);
+  }
+
+  const typeNames = { typography: 'Типографика', spacing: 'Отступы', color: 'Цвета', image: 'Изображения' };
+
+  for (const [type, items] of Object.entries(grouped)) {
+    text += `${typeNames[type] || type}:\n`;
+    for (const i of items.slice(0, 5)) {
+      const textHint = i.text ? ` («${i.text.slice(0, 40)}»)` : '';
+      text += `  — ${i.property || ''}: макет ${i.expected || '?'}, сайт ${i.actual || '?'}${textHint}\n`;
+    }
+    if (items.length > 5) text += `  — ...и ещё ${items.length - 5}\n`;
+    text += '\n';
+  }
+
+  const errors = issues.filter(i => i.severity === 'error').length;
+  const warnings = issues.filter(i => i.severity === 'warning').length;
+  if (errors > 0) text += `Критичных: ${errors}, мелких: ${warnings}. Давайте сначала критичные поправим!`;
+  else if (issues.length > 0) text += `Некритично, но будет классно подправить — будет pixel perfect!`;
+
+  return text;
+}
+
+window.copyDesignerNote = function() {
+  const text = getDesignerNoteText(state.reportData, state.matchPercent);
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    postToPlugin({ type: 'notify', message: 'Комментарий скопирован!' });
+  });
+};
+
 window.filterIssues = function(type) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === type));
   document.querySelectorAll('.issue-card').forEach(card => {
@@ -721,6 +932,15 @@ window.exportReport = function(format) {
     text = JSON.stringify(r, null, 2);
   } else if (format === 'markdown') {
     text = `# Design Review Report\n\n`;
+    // Add designer note at top
+    const note = getDesignerNoteText(r, state.matchPercent);
+    if (note) {
+      text += `> **Комментарий дизайнера:**\n>\n`;
+      for (const line of note.split('\n')) {
+        text += `> ${line}\n`;
+      }
+      text += `\n---\n\n`;
+    }
     text += `**Pixel match:** ${r.stats?.matchPercent || '—'}%\n`;
     text += `**Issues:** ${r.stats?.totalIssues || 0} (${r.stats?.errors || 0} errors, ${r.stats?.warnings || 0} warnings)\n\n`;
     if (r.issues?.length) {
