@@ -18,8 +18,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod/v3';
 
-import { parseFigmaUrl, fetchFigmaFile, extractDesignTokens } from './figma-api.js';
-import { extractSiteElements, closeBrowser } from './site-extractor.js';
+import { parseFigmaUrl, fetchFigmaFile, extractDesignTokens, exportFigmaImage } from './figma-api.js';
+import { extractSiteElements, takeSiteScreenshot, closeBrowser } from './site-extractor.js';
 import { compareDesignWithSite } from './comparator.js';
 import { generateDesignerReport, generateStructuredReport } from './designer-report.js';
 
@@ -76,17 +76,23 @@ server.tool(
       const token = getFigmaToken();
       const { fileKey, nodeId } = parseFigmaUrl(figma_url);
 
-      // 1. Fetch Figma data
-      const figmaData = await fetchFigmaFile(token, fileKey, nodeId ? [nodeId] : null);
+      // 1. Fetch Figma data + image in parallel
+      const [figmaData, figmaImageBase64, siteScreenshotBase64] = await Promise.all([
+        fetchFigmaFile(token, fileKey, nodeId ? [nodeId] : null),
+        exportFigmaImage(token, fileKey, nodeId).catch(e => null),
+        takeSiteScreenshot(site_url, {
+          width: viewport_width,
+          height: viewport_height,
+          fullPage: false,
+        }).catch(e => null),
+      ]);
 
       // Extract the root node
       let rootNode;
       if (figmaData.nodes) {
-        // Node-specific response
         const firstNodeData = Object.values(figmaData.nodes)[0];
         rootNode = firstNodeData?.document;
       } else {
-        // Full file response — find the first page
         rootNode = figmaData.document?.children?.[0];
       }
 
@@ -132,12 +138,22 @@ server.tool(
         }
       }
 
-      return {
-        content: [{
-          type: 'text',
-          text: output.join('\n'),
-        }],
-      };
+      // 6. Build response with images + text
+      const content = [];
+
+      if (figmaImageBase64) {
+        content.push({ type: 'text', text: '🎨 Figma-макет:' });
+        content.push({ type: 'image', data: figmaImageBase64, mimeType: 'image/png' });
+      }
+
+      if (siteScreenshotBase64) {
+        content.push({ type: 'text', text: '🌐 Скриншот сайта:' });
+        content.push({ type: 'image', data: siteScreenshotBase64, mimeType: 'image/png' });
+      }
+
+      content.push({ type: 'text', text: output.join('\n') });
+
+      return { content };
     } catch (err) {
       return {
         content: [{ type: 'text', text: `Error: ${err.message}` }],

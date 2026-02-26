@@ -254,4 +254,38 @@ async function dismissPopups(page) {
   });
 }
 
+/**
+ * Take a full-page screenshot of a URL, returns base64 PNG
+ */
+export async function takeSiteScreenshot(url, options = {}) {
+  const {
+    width = 1440,
+    height = 900,
+    delay = 2000,
+    fullPage = true,
+    dismissPopups: shouldDismiss = true,
+  } = options;
+
+  const br = await getBrowser();
+  const page = await br.newPage();
+
+  try {
+    await page.setViewport({ width, height, deviceScaleFactor: 1 });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+
+    if (delay > 0) await sleep(delay);
+    if (shouldDismiss) await dismissPopups(page);
+
+    const base64 = await page.screenshot({
+      encoding: 'base64',
+      fullPage,
+      type: 'png',
+    });
+
+    return base64;
+  } finally {
+    await page.close();
+  }
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

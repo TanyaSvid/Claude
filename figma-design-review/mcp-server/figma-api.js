@@ -234,6 +234,51 @@ function processNode(node, parentPath, tokens) {
   }
 }
 
+/**
+ * Export Figma node(s) as PNG image, returns base64 string
+ */
+export async function exportFigmaImage(token, fileKey, nodeId, scale = 2) {
+  // If no specific node, get the first page
+  let ids = nodeId;
+  if (!ids) {
+    const fileData = await fetchFigmaFile(token, fileKey);
+    const firstPage = fileData.document?.children?.[0];
+    if (!firstPage) throw new Error('No pages found in Figma file');
+    // Get the first top-level frame on the page
+    const firstFrame = firstPage.children?.find(c =>
+      c.type === 'FRAME' || c.type === 'COMPONENT' || c.type === 'SECTION'
+    ) || firstPage;
+    ids = firstFrame.id;
+  }
+
+  // Request image render from Figma
+  const params = new URLSearchParams({
+    ids,
+    format: 'png',
+    scale: String(scale),
+  });
+
+  const resp = await fetch(`${FIGMA_API}/images/${fileKey}?${params}`, {
+    headers: { 'X-Figma-Token': token },
+  });
+
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Figma Image API error ${resp.status}: ${body}`);
+  }
+
+  const data = await resp.json();
+  const imageUrl = data.images?.[ids];
+  if (!imageUrl) throw new Error('Figma did not return an image URL');
+
+  // Download the image and convert to base64
+  const imgResp = await fetch(imageUrl);
+  if (!imgResp.ok) throw new Error(`Failed to download Figma image: ${imgResp.status}`);
+
+  const buffer = Buffer.from(await imgResp.arrayBuffer());
+  return buffer.toString('base64');
+}
+
 // ── Helpers ──
 
 function extractLineHeight(style) {
