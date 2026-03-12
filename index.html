@@ -3,312 +3,1559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pomodoro Timer</title>
+    <title>Figma Instruction Prep — MVP</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #EEF2FF;
+            --primary-dark: #3730A3;
+            --green: #059669;
+            --green-light: #D1FAE5;
+            --yellow: #D97706;
+            --yellow-light: #FEF3C7;
+            --red: #DC2626;
+            --red-light: #FEE2E2;
+            --text: #111827;
+            --muted: #6B7280;
+            --border: #E5E7EB;
+            --surface: #F3F4F6;
+            --white: #FFFFFF;
+            --r: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,.1);
+            --shadow-md: 0 4px 12px rgba(0,0,0,.1);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--surface);
             min-height: 100vh;
-            transition: background-color 0.5s ease;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
-        body.work {
-            background-color: #e74c3c;
-        }
+        /* ─── LAYOUT ─── */
+        .app { display: flex; flex-direction: column; min-height: 100vh; }
 
-        body.short-break {
-            background-color: #27ae60;
-        }
-
-        body.long-break {
-            background-color: #2980b9;
-        }
-
-        .container {
-            text-align: center;
-            color: white;
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-            font-weight: 300;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .mode-buttons {
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 0 16px;
+            height: 56px;
             display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 30px;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
         }
 
-        .mode-btn {
-            padding: 8px 20px;
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            background: transparent;
-            color: white;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
+        .header-logo { font-weight: 700; font-size: 16px; color: var(--primary); white-space: nowrap; }
+        .header-logo span { font-weight: 300; color: var(--muted); }
 
-        .mode-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .mode-btn.active {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: white;
-            font-weight: 600;
-        }
-
-        .timer-display {
-            font-size: 8rem;
-            font-weight: 700;
-            letter-spacing: 4px;
-            margin: 20px 0;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .controls {
+        .header-steps {
             display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-
-        .btn {
-            padding: 12px 40px;
-            border: none;
-            border-radius: 30px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 600;
-        }
-
-        .btn-start {
-            background: white;
-            color: #333;
-        }
-
-        .btn-start:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-reset {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-reset:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .session-counter {
-            font-size: 1rem;
-            opacity: 0.8;
-        }
-
-        .progress-bar {
-            width: 300px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-            margin: 20px auto;
+            align-items: center;
+            gap: 0;
+            margin-left: auto;
             overflow: hidden;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: white;
-            border-radius: 3px;
-            transition: width 0.5s ease;
-            width: 0%;
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--muted);
+            white-space: nowrap;
         }
 
-        @media (max-width: 480px) {
-            .timer-display {
-                font-size: 4.5rem;
-            }
-            .mode-buttons {
-                flex-wrap: wrap;
-            }
+        .step-item .step-num {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: background .2s, color .2s;
+        }
+
+        .step-item .step-label { display: none; }
+        @media (min-width: 640px) { .step-item .step-label { display: block; } }
+
+        .step-item.active .step-num { background: var(--primary); color: var(--white); }
+        .step-item.active { color: var(--primary); }
+        .step-item.done .step-num { background: var(--green); color: var(--white); }
+        .step-item.done { color: var(--green); }
+
+        .step-arrow { color: var(--border); font-size: 16px; }
+
+        .main { flex: 1; padding: 20px 16px 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+        /* ─── SCREENS ─── */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ─── CARD ─── */
+        .card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius, var(--r));
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        /* ─── TYPOGRAPHY ─── */
+        .page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+        .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 8px; }
+
+        /* ─── UPLOAD ZONE ─── */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--r);
+            padding: 48px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: var(--surface);
+            user-select: none;
+        }
+
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .upload-icon { font-size: 48px; margin-bottom: 12px; }
+        .upload-zone h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+        .upload-zone p { color: var(--muted); font-size: 14px; }
+
+        /* ─── FILE LIST ─── */
+        .file-list { display: flex; flex-direction: column; gap: 8px; }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+        }
+
+        .file-icon { font-size: 22px; flex-shrink: 0; }
+
+        .file-info { flex: 1; min-width: 0; }
+        .file-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-size { font-size: 12px; color: var(--muted); }
+
+        .role-select {
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            background: var(--white);
+            color: var(--text);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .file-remove {
+            background: none; border: none; cursor: pointer;
+            color: var(--muted); font-size: 18px; padding: 4px; line-height: 1; flex-shrink: 0;
+        }
+        .file-remove:hover { color: var(--red); }
+
+        /* ─── TEXTAREA ─── */
+        .text-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color .2s;
+        }
+        .text-area:focus { border-color: var(--primary); }
+
+        /* ─── BUTTONS ─── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 20px;
+            border: none; border-radius: var(--r);
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all .15s;
+            text-decoration: none; white-space: nowrap;
+        }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn-success { background: var(--green); color: var(--white); }
+        .btn-success:hover { filter: brightness(0.9); }
+        .btn-danger { background: var(--red); color: var(--white); }
+        .btn-danger:hover { filter: brightness(0.9); }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-icon { padding: 6px 8px; }
+        .w-full { width: 100%; }
+
+        /* ─── FLEX UTILS ─── */
+        .flex { display: flex; }
+        .flex-wrap { flex-wrap: wrap; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .justify-between { justify-content: space-between; }
+        .justify-end { justify-content: flex-end; }
+        .gap-4 { gap: 4px; }
+        .gap-8 { gap: 8px; }
+        .gap-12 { gap: 12px; }
+        .gap-16 { gap: 16px; }
+        .mt-8 { margin-top: 8px; }
+        .mt-12 { margin-top: 12px; }
+        .mt-16 { margin-top: 16px; }
+        .mt-20 { margin-top: 20px; }
+        .mb-8 { margin-bottom: 8px; }
+        .mb-16 { margin-bottom: 16px; }
+        .mb-20 { margin-bottom: 20px; }
+        .ml-auto { margin-left: auto; }
+        .hidden { display: none !important; }
+        .text-muted { color: var(--muted); font-size: 13px; }
+        .text-sm { font-size: 13px; }
+        .text-xs { font-size: 12px; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+
+        /* ─── PROCESSING ─── */
+        .proc-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+        }
+
+        .proc-icon {
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0;
+        }
+
+        .proc-icon.pending { background: var(--border); color: var(--muted); }
+        .proc-icon.running { background: var(--primary-light); color: var(--primary); animation: spin 1s linear infinite; }
+        .proc-icon.done { background: var(--green-light); color: var(--green); }
+        .proc-icon.error { background: var(--red-light); color: var(--red); }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .prog-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .prog-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .4s ease; }
+
+        /* ─── REVIEW LAYOUT ─── */
+        .review-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+        @media (min-width: 1024px) {
+            .review-wrap { flex-direction: row; align-items: flex-start; }
+            .review-sidebar { width: 260px; flex-shrink: 0; position: sticky; top: 70px; max-height: calc(100vh - 90px); overflow-y: auto; }
+            .review-center { flex: 1; min-width: 0; }
+            .review-editor { width: 320px; flex-shrink: 0; position: sticky; top: 70px; }
+        }
+
+        /* ─── TREE ─── */
+        .tree-section { margin-bottom: 8px; }
+        .tree-section-title {
+            font-size: 12px; font-weight: 600; color: var(--muted);
+            padding: 3px 0; cursor: pointer; user-select: none;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tree-section-title:hover { color: var(--primary); }
+        .tree-block {
+            padding: 2px 0 2px 12px; font-size: 12px; cursor: pointer;
+            color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tree-block:hover { color: var(--text); }
+        .tree-block.warn-item { color: var(--yellow); }
+
+        /* ─── SECTION GROUP ─── */
+        .section-group { margin-bottom: 20px; }
+
+        .section-head {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px;
+            background: var(--primary-light);
+            border: 1px solid #C7D2FE;
+            border-radius: var(--r);
+            margin-bottom: 8px;
+        }
+
+        .section-head-title {
+            font-size: 14px; font-weight: 700; color: var(--primary-dark);
+            flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            cursor: text;
+        }
+
+        /* ─── BLOCK ITEM ─── */
+        .block-list { display: flex; flex-direction: column; gap: 6px; }
+
+        .block-item {
+            border: 2px solid var(--border);
+            border-radius: var(--r);
+            background: var(--white);
+            cursor: pointer;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .block-item:hover { border-color: #A5B4FC; }
+        .block-item.sel { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        .block-item.warn { border-color: #FDE68A; }
+        .block-item.conflict { border-color: #FCA5A5; }
+
+        .block-head {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            border-radius: calc(var(--r) - 2px) calc(var(--r) - 2px) 0 0;
+        }
+
+        .badge {
+            font-size: 10px; font-weight: 700; padding: 2px 7px;
+            border-radius: 20px; text-transform: uppercase; letter-spacing: .4px;
+        }
+        .badge-text { background: #E5E7EB; color: #374151; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-step { background: #DBEAFE; color: #1E40AF; }
+        .badge-table-header { background: #F3E8FF; color: #6B21A8; }
+        .badge-table-row { background: #EDE9FE; color: #5B21B6; }
+        .badge-empty-page { background: #F1F5F9; color: #475569; }
+
+        .conf { font-size: 11px; }
+        .conf-hi { color: var(--green); }
+        .conf-md { color: var(--yellow); }
+        .conf-lo { color: var(--red); }
+        .needs-badge {
+            font-size: 10px; color: var(--yellow);
+            background: var(--yellow-light); padding: 1px 6px; border-radius: 10px;
+        }
+
+        .block-body { padding: 8px 10px; }
+        .block-h2 { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+        .block-preview {
+            font-size: 13px; color: var(--muted); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ─── BLOCK EDITOR ─── */
+        .editor-card {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: var(--r); padding: 16px;
+        }
+
+        .editor-field { margin-bottom: 14px; }
+
+        .editor-label {
+            display: block; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .6px; color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        .editor-input, .editor-textarea, .editor-select {
+            width: 100%; padding: 8px 10px;
+            border: 1px solid var(--border); border-radius: var(--r);
+            font-size: 14px; font-family: inherit;
+            outline: none; transition: border-color .15s;
+            background: var(--white); color: var(--text);
+        }
+        .editor-input:focus, .editor-textarea:focus, .editor-select:focus { border-color: var(--primary); }
+        .editor-textarea { min-height: 110px; resize: vertical; }
+
+        /* ─── TYPE GRID ─── */
+        .type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+
+        .type-btn {
+            padding: 6px 4px; border: 2px solid var(--border); border-radius: 6px;
+            background: none; cursor: pointer; font-size: 11px; font-weight: 600;
+            transition: all .15s; text-align: center; line-height: 1.3;
+        }
+        .type-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .type-btn.on { border-color: var(--primary); background: var(--primary); color: var(--white); }
+
+        /* ─── DIVIDER ─── */
+        .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+        /* ─── EXPORT ─── */
+        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 16px; }
+
+        .tab {
+            padding: 10px 16px; border: none; background: none;
+            font-size: 14px; font-weight: 500; color: var(--muted);
+            cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+        }
+        .tab.on { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .code-preview {
+            background: #1E1E2E; border-radius: var(--r); padding: 16px;
+            font-family: 'Courier New', monospace; font-size: 13px;
+            line-height: 1.7; color: #CDD6F4; white-space: pre-wrap;
+            overflow: auto; max-height: 440px; tab-size: 2;
+        }
+
+        .val-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 12px; border-radius: var(--r); margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .val-ok { background: var(--green-light); color: #065F46; }
+        .val-warn { background: var(--yellow-light); color: #92400E; }
+        .val-err { background: var(--red-light); color: #991B1B; }
+
+        /* ─── EMPTY STATE ─── */
+        .empty {
+            text-align: center; padding: 40px 20px; color: var(--muted);
+        }
+        .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+        /* ─── TOAST ─── */
+        .toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1F2937; color: var(--white);
+            padding: 10px 20px; border-radius: var(--r);
+            font-size: 14px; font-weight: 500; z-index: 9999;
+            transition: transform .25s; max-width: 90vw; text-align: center;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ─── MOBILE adjustments ─── */
+        @media (max-width: 640px) {
+            .main { padding: 12px 12px 32px; }
+            .page-title { font-size: 17px; }
         }
     </style>
 </head>
-<body class="work">
-    <div class="container">
-        <h1 id="status-text">Время работать!</h1>
+<body>
 
-        <div class="mode-buttons">
-            <button class="mode-btn active" data-mode="work">Работа</button>
-            <button class="mode-btn" data-mode="short-break">Короткий перерыв</button>
-            <button class="mode-btn" data-mode="long-break">Длинный перерыв</button>
+<div class="app">
+
+    <!-- ─── HEADER ─── -->
+    <header class="header">
+        <div class="header-logo">🔌 Figma <span>Prep</span></div>
+        <nav class="header-steps" id="headerSteps">
+            <div class="step-item active" data-step="0">
+                <div class="step-num">1</div>
+                <div class="step-label">Загрузка</div>
+            </div>
+            <div class="step-arrow">›</div>
+            <div class="step-item" data-step="1">
+                <div class="step-num">2</div>
+                <div class="step-label">Обработка</div>
+            </div>
+            <div class="step-arrow">›</div>
+            <div class="step-item" data-step="2">
+                <div class="step-num">3</div>
+                <div class="step-label">Редактор</div>
+            </div>
+            <div class="step-arrow">›</div>
+            <div class="step-item" data-step="3">
+                <div class="step-num">4</div>
+                <div class="step-label">Экспорт</div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main">
+
+        <!-- ══════════════ SCREEN 1: UPLOAD ══════════════ -->
+        <div id="screen-upload" class="screen active">
+
+            <div class="page-title">Загрузка источников</div>
+
+            <!-- Upload zone -->
+            <div class="card mb-16">
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📁</div>
+                    <h2>Перетащите файлы сюда</h2>
+                    <p>Поддерживаются PDF, DOCX, TXT</p>
+                    <div class="mt-12">
+                        <button class="btn btn-secondary btn-sm"
+                                onclick="document.getElementById('fileInput').click()">
+                            Выбрать файлы
+                        </button>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.txt" style="display:none">
+                </div>
+
+                <div id="fileListWrap" class="mt-12 hidden">
+                    <div class="section-label">Загруженные источники</div>
+                    <div id="fileList" class="file-list"></div>
+                </div>
+            </div>
+
+            <!-- Text paste -->
+            <div class="card mb-20">
+                <div class="section-label">Или вставьте текст</div>
+                <textarea class="text-area" id="pastedText"
+                          placeholder="Вставьте текст инструкции..."></textarea>
+            </div>
+
+            <!-- Action bar -->
+            <div class="flex items-center gap-12 flex-wrap">
+                <button class="btn btn-primary" id="btnProcess">
+                    Обработать ▶
+                </button>
+                <span class="text-muted" id="uploadHint">Добавьте файлы или введите текст</span>
+            </div>
+
+        </div><!-- /screen-upload -->
+
+
+        <!-- ══════════════ SCREEN 2: PROCESSING ══════════════ -->
+        <div id="screen-processing" class="screen">
+            <div class="page-title">Обработка файлов</div>
+            <div class="card">
+                <div id="procSteps" class="flex flex-col gap-8"></div>
+                <div class="prog-bar mt-16">
+                    <div class="prog-fill" id="progFill" style="width:0%"></div>
+                </div>
+                <div class="text-muted mt-8" id="procMsg">Инициализация...</div>
+            </div>
+        </div><!-- /screen-processing -->
+
+
+        <!-- ══════════════ SCREEN 3: REVIEW ══════════════ -->
+        <div id="screen-review" class="screen">
+
+            <div class="flex items-center justify-between mb-16 flex-wrap gap-8">
+                <div class="page-title" style="margin:0">Редактирование структуры</div>
+                <div class="flex gap-8 items-center">
+                    <span id="warnCount" class="hidden"
+                          style="background:var(--yellow);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;"></span>
+                    <button class="btn btn-secondary btn-sm" onclick="goTo('upload')">← Загрузка</button>
+                    <button class="btn btn-primary btn-sm" onclick="goTo('export')">Экспорт →</button>
+                </div>
+            </div>
+
+            <div class="review-wrap">
+
+                <!-- Sidebar: tree -->
+                <div class="review-sidebar">
+                    <div class="card" style="padding:12px;">
+                        <div class="section-label">Документ</div>
+                        <input class="editor-input mb-8" id="docTitleInput"
+                               placeholder="Название документа" style="font-weight:600;">
+                        <div class="divider" style="margin:8px 0;"></div>
+                        <div id="structTree" style="max-height:300px;overflow-y:auto;"></div>
+                        <div class="divider" style="margin:8px 0;"></div>
+                        <button class="btn btn-secondary btn-sm w-full" id="btnAddSection">
+                            + Раздел
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Center: blocks -->
+                <div class="review-center">
+                    <div id="blockListWrap"></div>
+                </div>
+
+                <!-- Editor panel -->
+                <div class="review-editor">
+                    <div id="editorPanel" class="editor-card hidden">
+
+                        <div class="flex items-center justify-between mb-16">
+                            <div class="font-bold text-sm">Редактор блока</div>
+                            <button class="btn btn-secondary btn-icon btn-sm"
+                                    onclick="closeEditor()">✕</button>
+                        </div>
+
+                        <div class="editor-field">
+                            <label class="editor-label">Тип блока</label>
+                            <div class="type-grid">
+                                <button class="type-btn" data-type="text">Текст</button>
+                                <button class="type-btn" data-type="warning">⚠ Внимание</button>
+                                <button class="type-btn" data-type="step">📋 Шаг</button>
+                                <button class="type-btn" data-type="table-header">Таблица<br>шапка</button>
+                                <button class="type-btn" data-type="table-row">Таблица<br>строка</button>
+                                <button class="type-btn" data-type="empty-page">Пустая<br>стр.</button>
+                            </div>
+                        </div>
+
+                        <div class="editor-field">
+                            <label class="editor-label">Заголовок H2</label>
+                            <input class="editor-input" id="editH2"
+                                   placeholder="Оставьте пустым если нет">
+                        </div>
+
+                        <div class="editor-field">
+                            <label class="editor-label">Текст блока</label>
+                            <textarea class="editor-textarea" id="editBody"></textarea>
+                        </div>
+
+                        <div class="flex gap-8">
+                            <button class="btn btn-primary btn-sm" id="btnSaveBlock">Сохранить</button>
+                            <button class="btn btn-secondary btn-sm" id="btnDupBlock">Копировать</button>
+                            <button class="btn btn-danger btn-sm ml-auto" id="btnDelBlock">Удалить</button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div><!-- /screen-review -->
+
+
+        <!-- ══════════════ SCREEN 4: EXPORT ══════════════ -->
+        <div id="screen-export" class="screen">
+
+            <div class="flex items-center justify-between mb-16 flex-wrap gap-8">
+                <div class="page-title" style="margin:0">Экспорт</div>
+                <button class="btn btn-secondary btn-sm" onclick="goTo('review')">← Редактор</button>
+            </div>
+
+            <div class="card mb-16">
+                <div class="tabs">
+                    <button class="tab on" data-tab="txt">TXT для Figma</button>
+                    <button class="tab" data-tab="json">JSON структура</button>
+                    <button class="tab" data-tab="val">Валидация</button>
+                </div>
+
+                <div id="tab-txt">
+                    <pre class="code-preview" id="prevTxt"></pre>
+                </div>
+                <div id="tab-json" class="hidden">
+                    <pre class="code-preview" id="prevJson"></pre>
+                </div>
+                <div id="tab-val" class="hidden">
+                    <div id="valReport"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-8 flex-wrap">
+                <button class="btn btn-primary" id="btnDlTxt">⬇ Скачать TXT</button>
+                <button class="btn btn-secondary" id="btnDlJson">⬇ Скачать JSON</button>
+                <button class="btn btn-secondary" id="btnCopyTxt">📋 Копировать TXT</button>
+            </div>
+
+        </div><!-- /screen-export -->
+
+    </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+
+<!-- ═══════════════════════ JAVASCRIPT ═══════════════════════ -->
+<script>
+
+// ──────────────────────────────────────────────
+// PDF.js worker setup
+// ──────────────────────────────────────────────
+if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+// ──────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────
+const S = {
+    files: [],        // {id, file, name, size, ext, role}
+    pastedText: '',
+    doc: newDoc(),
+    selId: null,      // selected block id
+};
+
+function newDoc() {
+    return { id: uid(), title: '', sources: [], sections: [] };
+}
+
+// ──────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function esc(s) {
+    if (!s) return '';
+    return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function fmtSize(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
+}
+
+function extIcon(ext) {
+    if (ext === 'pdf') return '📄';
+    if (ext === 'docx' || ext === 'doc') return '📝';
+    return '📃';
+}
+
+function typeLabel(t) {
+    return {text:'Текст',warning:'Внимание',step:'Шаг',
+            'table-header':'Таблица (шапка)','table-row':'Таблица (строка)',
+            'empty-page':'Пустая страница'}[t] || t;
+}
+
+function badgeCls(t) {
+    return {text:'badge-text',warning:'badge-warning',step:'badge-step',
+            'table-header':'badge-table-header','table-row':'badge-table-row',
+            'empty-page':'badge-empty-page'}[t] || 'badge-text';
+}
+
+function confCls(c) {
+    return c >= 0.85 ? 'conf-hi' : c >= 0.65 ? 'conf-md' : 'conf-lo';
+}
+
+function toast(msg, ms=3000) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), ms);
+}
+
+function dlFile(content, name, mime) {
+    const blob = new Blob([content], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ──────────────────────────────────────────────
+// NAVIGATION
+// ──────────────────────────────────────────────
+const SCREEN_ORDER = ['upload','processing','review','export'];
+
+function goTo(name) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+
+    const idx = SCREEN_ORDER.indexOf(name);
+    document.querySelectorAll('#headerSteps .step-item').forEach((el, i) => {
+        el.classList.remove('active','done');
+        if (i < idx) el.classList.add('done');
+        if (i === idx) el.classList.add('active');
+    });
+
+    if (name === 'review') renderReview();
+    if (name === 'export') renderExport();
+}
+
+// ──────────────────────────────────────────────
+// SCREEN 1 — UPLOAD
+// ──────────────────────────────────────────────
+const uploadZone = document.getElementById('uploadZone');
+const fileInput  = document.getElementById('fileInput');
+
+uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    addFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', e => {
+    addFiles(Array.from(e.target.files));
+    e.target.value = '';
+});
+
+document.getElementById('pastedText').addEventListener('input', function() {
+    S.pastedText = this.value.trim();
+    updateHint();
+});
+
+function addFiles(files) {
+    const ok = ['pdf','docx','doc','txt'];
+    files.forEach(f => {
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (!ok.includes(ext)) { toast('Формат .'+ext+' не поддерживается'); return; }
+        S.files.push({ id:uid(), file:f, name:f.name, size:f.size, ext, role:'base' });
+    });
+    renderFileList();
+    updateHint();
+}
+
+function renderFileList() {
+    const wrap = document.getElementById('fileListWrap');
+    const list = document.getElementById('fileList');
+    if (!S.files.length) { wrap.classList.add('hidden'); return; }
+    wrap.classList.remove('hidden');
+    list.innerHTML = S.files.map(f => `
+        <div class="file-item">
+            <div class="file-icon">${extIcon(f.ext)}</div>
+            <div class="file-info">
+                <div class="file-name">${esc(f.name)}</div>
+                <div class="file-size">${fmtSize(f.size)}</div>
+            </div>
+            <select class="role-select" onchange="setRole('${f.id}',this.value)">
+                <option value="base"        ${f.role==='base'?'selected':''}>Основной</option>
+                <option value="patch"       ${f.role==='patch'?'selected':''}>Правки</option>
+                <option value="translation" ${f.role==='translation'?'selected':''}>Перевод</option>
+                <option value="notes"       ${f.role==='notes'?'selected':''}>Заметки</option>
+            </select>
+            <button class="file-remove" onclick="rmFile('${f.id}')">✕</button>
         </div>
+    `).join('');
+}
 
-        <div class="timer-display" id="timer">25:00</div>
+function setRole(id, role) {
+    const f = S.files.find(x => x.id === id);
+    if (f) f.role = role;
+}
 
-        <div class="progress-bar">
-            <div class="progress-fill" id="progress"></div>
-        </div>
+function rmFile(id) {
+    S.files = S.files.filter(f => f.id !== id);
+    renderFileList();
+    updateHint();
+}
 
-        <div class="controls">
-            <button class="btn btn-start" id="startBtn">Старт</button>
-            <button class="btn btn-reset" id="resetBtn">Сброс</button>
-        </div>
+function updateHint() {
+    const el = document.getElementById('uploadHint');
+    const n = S.files.length;
+    const t = S.pastedText.length > 0;
+    if (!n && !t) { el.textContent = 'Добавьте файлы или введите текст'; return; }
+    const parts = [];
+    if (n) parts.push(n + ' файл(а)');
+    if (t) parts.push('вставленный текст');
+    el.textContent = 'Готово: ' + parts.join(' + ');
+}
 
-        <div class="session-counter" id="sessions">Завершено сессий: 0</div>
-    </div>
+document.getElementById('btnProcess').addEventListener('click', async () => {
+    if (!S.files.length && !S.pastedText) {
+        toast('Добавьте хотя бы один файл или введите текст');
+        return;
+    }
+    await runProcessing();
+});
 
-    <script>
-        const MODES = {
-            'work':        { minutes: 25, label: 'Время работать!',   bodyClass: 'work' },
-            'short-break': { minutes: 5,  label: 'Короткий перерыв',  bodyClass: 'short-break' },
-            'long-break':  { minutes: 15, label: 'Длинный перерыв',   bodyClass: 'long-break' },
-        };
+// ──────────────────────────────────────────────
+// SCREEN 2 — PROCESSING
+// ──────────────────────────────────────────────
+async function runProcessing() {
+    goTo('processing');
+    S.doc = newDoc();
+    S.selId = null;
 
-        let currentMode = 'work';
-        let timeLeft = MODES[currentMode].minutes * 60;
-        let totalTime = timeLeft;
-        let timerInterval = null;
-        let isRunning = false;
-        let sessionsCompleted = 0;
+    // Build step list
+    const steps = [];
+    S.files.forEach(f => {
+        steps.push({ id:uid(), label:'Извлечение: ' + f.name, state:'pending', file:f });
+    });
+    if (S.pastedText) {
+        steps.push({ id:uid(), label:'Обработка вставленного текста', state:'pending', isText:true });
+    }
+    steps.push({ id:uid(), label:'Нормализация контента', state:'pending', isNorm:true });
+    steps.push({ id:uid(), label:'Построение структуры документа', state:'pending', isStruct:true });
+    steps.push({ id:uid(), label:'Классификация и оценка блоков', state:'pending', isClassify:true });
 
-        const timerDisplay = document.getElementById('timer');
-        const startBtn = document.getElementById('startBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const statusText = document.getElementById('status-text');
-        const sessionsEl = document.getElementById('sessions');
-        const progressFill = document.getElementById('progress');
-        const modeButtons = document.querySelectorAll('.mode-btn');
+    const render = () => {
+        document.getElementById('procSteps').innerHTML = steps.map(s => `
+            <div class="proc-step">
+                <div class="proc-icon ${s.state}">
+                    ${s.state==='done'?'✓': s.state==='error'?'✕': s.state==='running'?'⟳':'○'}
+                </div>
+                <div class="text-sm">${esc(s.label)}</div>
+                ${s.err ? `<div class="text-sm ml-auto" style="color:var(--red)">${esc(s.err)}</div>` : ''}
+            </div>
+        `).join('');
+    };
 
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const s = (seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
+    const setMsg = m => document.getElementById('procMsg').textContent = m;
+    const setProg = p => document.getElementById('progFill').style.width = p + '%';
 
-        function updateDisplay() {
-            timerDisplay.textContent = formatTime(timeLeft);
-            document.title = `${formatTime(timeLeft)} — Pomodoro`;
-            const elapsed = totalTime - timeLeft;
-            const pct = totalTime > 0 ? (elapsed / totalTime) * 100 : 0;
-            progressFill.style.width = pct + '%';
-        }
+    render();
 
-        function switchMode(mode) {
-            currentMode = mode;
-            const config = MODES[mode];
-            timeLeft = config.minutes * 60;
-            totalTime = timeLeft;
-            statusText.textContent = config.label;
-            document.body.className = config.bodyClass;
+    const allRaw = [];
+    let done = 0;
+    const total = steps.length;
 
-            modeButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.mode === mode);
-            });
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
 
-            stopTimer();
-            updateDisplay();
-        }
+        if (step.isNorm) {
+            step.state = 'running'; render(); setMsg('Нормализация...');
+            await sleep(200);
+            const norm = normalizeBlocks(allRaw);
+            step.state = 'done'; done++; setProg((done/total)*100); render();
 
-        function startTimer() {
-            if (isRunning) return;
-            isRunning = true;
-            startBtn.textContent = 'Пауза';
+            // Struct
+            const ss = steps[i+1];
+            ss.state = 'running'; render(); setMsg('Построение структуры...');
+            await sleep(300);
+            buildStructure(norm);
+            ss.state = 'done'; done++; setProg((done/total)*100); render();
+            i++;
 
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                updateDisplay();
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    isRunning = false;
-                    onTimerComplete();
-                }
-            }, 1000);
-        }
-
-        function pauseTimer() {
-            clearInterval(timerInterval);
-            isRunning = false;
-            startBtn.textContent = 'Старт';
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-            isRunning = false;
-            startBtn.textContent = 'Старт';
-        }
-
-        function onTimerComplete() {
-            playSound();
-
-            if (currentMode === 'work') {
-                sessionsCompleted++;
-                sessionsEl.textContent = `Завершено сессий: ${sessionsCompleted}`;
-
-                if (sessionsCompleted % 4 === 0) {
-                    switchMode('long-break');
-                } else {
-                    switchMode('short-break');
-                }
-            } else {
-                switchMode('work');
+            // Classify
+            const cs = steps[i+1];
+            if (cs) {
+                cs.state = 'running'; render(); setMsg('Классификация...');
+                await sleep(200);
+                finalizeClassify();
+                cs.state = 'done'; done++; setProg(100); render();
+                i++;
             }
+            break;
         }
 
-        function playSound() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const notes = [523.25, 659.25, 783.99];
-                notes.forEach((freq, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.frequency.value = freq;
-                    osc.type = 'sine';
-                    gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.2);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.2 + 0.4);
-                    osc.start(ctx.currentTime + i * 0.2);
-                    osc.stop(ctx.currentTime + i * 0.2 + 0.4);
+        step.state = 'running'; render(); setMsg('Обработка ' + step.label + '...');
+        try {
+            let raw = [];
+            if (step.file) {
+                raw = await extractFile(step.file);
+                raw.forEach(b => b.srcId = 'src_' + step.file.id);
+                S.doc.sources.push({
+                    id: 'src_' + step.file.id,
+                    type: step.file.ext,
+                    name: step.file.name,
+                    role: step.file.role
                 });
-            } catch (e) {
-                // Audio not supported — no problem
+            } else if (step.isText) {
+                raw = parseText(S.pastedText, 'pasted');
+                raw.forEach(b => b.srcId = 'src_pasted');
+                S.doc.sources.push({ id:'src_pasted', type:'text', name:'Вставленный текст', role:'notes' });
             }
+            allRaw.push(...raw);
+            step.state = 'done';
+        } catch(e) {
+            step.state = 'error';
+            step.err = e.message || 'Ошибка';
         }
 
-        // Event listeners
-        startBtn.addEventListener('click', () => {
-            isRunning ? pauseTimer() : startTimer();
-        });
+        done++;
+        setProg((done/total)*70);
+        render();
+        await sleep(100);
+    }
 
-        resetBtn.addEventListener('click', () => {
-            switchMode(currentMode);
-        });
+    await sleep(400);
+    goTo('review');
+}
 
-        modeButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchMode(btn.dataset.mode);
+// ──────────────────────────────────────────────
+// EXTRACTION
+// ──────────────────────────────────────────────
+async function extractFile(fi) {
+    if (fi.ext === 'pdf')              return extractPDF(fi.file);
+    if (fi.ext === 'docx' || fi.ext === 'doc') return extractDOCX(fi.file);
+    if (fi.ext === 'txt')              return extractTXT(fi.file);
+    throw new Error('Неизвестный формат');
+}
+
+async function extractPDF(file) {
+    if (typeof pdfjsLib === 'undefined') {
+        const text = await file.text().catch(() => '');
+        return parseText(text, 'pdf');
+    }
+    const ab = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+    const blocks = [];
+
+    for (let pn = 1; pn <= pdf.numPages; pn++) {
+        const page = await pdf.getPage(pn);
+        const content = await page.getTextContent();
+
+        // Group items into lines by Y coordinate
+        const lineMap = new Map();
+        for (const item of content.items) {
+            if (!item.str.trim()) continue;
+            const y = Math.round(item.transform[5] / 4) * 4;
+            if (!lineMap.has(y)) lineMap.set(y, { y, texts: [], fontSize: 0 });
+            const ln = lineMap.get(y);
+            ln.texts.push(item.str);
+            ln.fontSize = Math.max(ln.fontSize, Math.abs(item.transform[3]));
+        }
+
+        // Sort lines top-to-bottom
+        const lines = Array.from(lineMap.values()).sort((a,b) => b.y - a.y);
+        let pageText = '';
+        for (const ln of lines) {
+            const t = ln.texts.join('').trim();
+            if (t) pageText += t + '\n';
+        }
+
+        if (pn > 1) blocks.push({ raw:'', isPageBreak:true });
+
+        const paras = pageText.split(/\n{2,}/).map(p => p.replace(/\n/g,' ').trim()).filter(Boolean);
+        for (const para of paras) {
+            blocks.push({ raw: para, page: pn, src:'pdf' });
+        }
+    }
+    return blocks;
+}
+
+async function extractDOCX(file) {
+    if (typeof mammoth === 'undefined') {
+        return parseText(await file.text().catch(()=>''), 'docx');
+    }
+    const ab = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer: ab });
+
+    const parser = new DOMParser();
+    const dom = parser.parseFromString(result.value, 'text/html');
+    const blocks = [];
+
+    function walk(node) {
+        const tag = (node.tagName || '').toLowerCase();
+        const text = node.textContent.trim();
+
+        if (tag === 'table') {
+            const rows = node.querySelectorAll('tr');
+            rows.forEach((row, ri) => {
+                const cells = Array.from(row.querySelectorAll('td,th')).map(c => c.textContent.trim());
+                if (cells.some(c => c)) {
+                    blocks.push({
+                        raw: cells.join(' | '),
+                        isTable: true,
+                        isTableHead: ri === 0 || !!row.querySelector('th'),
+                        src: 'docx'
+                    });
+                }
             });
-        });
+            return;
+        }
 
-        updateDisplay();
-    </script>
+        if (/^h[1-6]$/.test(tag)) {
+            if (text) blocks.push({ raw:text, isHeading:true, hlevel:parseInt(tag[1]), src:'docx' });
+            return;
+        }
+
+        if (tag === 'p' || tag === 'li') {
+            if (text) blocks.push({ raw:text, src:'docx' });
+            return;
+        }
+
+        if (tag === 'ul' || tag === 'ol') {
+            node.querySelectorAll('li').forEach(li => {
+                const t = li.textContent.trim();
+                if (t) blocks.push({ raw:'• ' + t, src:'docx' });
+            });
+            return;
+        }
+
+        Array.from(node.children).forEach(walk);
+    }
+
+    Array.from(dom.body.children).forEach(walk);
+    return blocks;
+}
+
+async function extractTXT(file) {
+    const text = await file.text();
+    return parseText(text, 'txt');
+}
+
+function parseText(text, src) {
+    const blocks = [];
+    const lines = text.split('\n');
+    let buf = '';
+
+    const flush = () => {
+        const t = buf.trim();
+        if (t) blocks.push({ raw:t, src });
+        buf = '';
+    };
+
+    for (const line of lines) {
+        const t = line.trim();
+        if (!t) { flush(); continue; }
+
+        // Step-like line: starts new block
+        if (/^(Шаг|Step)\s+\d+/i.test(t) || /^\d+[.\)]\s+\S/.test(t)) {
+            flush();
+            blocks.push({ raw:t, src });
+            continue;
+        }
+
+        // Heading-like (markdown)
+        if (/^#{1,3}\s/.test(t)) {
+            flush();
+            const lvl = t.match(/^(#{1,3})/)[1].length;
+            blocks.push({ raw:t.replace(/^#+\s*/,''), isHeading:true, hlevel:lvl, src });
+            continue;
+        }
+
+        buf += (buf ? '\n' : '') + t;
+    }
+    flush();
+    return blocks;
+}
+
+// ──────────────────────────────────────────────
+// NORMALIZATION
+// ──────────────────────────────────────────────
+const NOISE_RE = [
+    /^https?:\/\//i,
+    /^www\./i,
+    /^страница\s*\d+$/i,
+    /^page\s*\d+$/i,
+    /^\d+$/,
+    /^[─═\-—_]{4,}$/,
+];
+
+function normalizeBlocks(raw) {
+    return raw.filter(b => {
+        if (b.isPageBreak) return true;
+        const t = (b.raw || '').trim();
+        if (!t || t.length < 2) return false;
+        if (NOISE_RE.some(re => re.test(t))) return false;
+        return true;
+    }).map(b => {
+        if (b.isPageBreak) return b;
+        let t = b.raw;
+        t = t.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+        t = t.replace(/[ \t]+/g,' ');
+        t = t.replace(/\n{3,}/g,'\n\n');
+        t = t.replace(/[«»„"]/g,'"');
+        t = t.replace(/–|—/g,'-');
+        // Re-join mid-sentence line breaks (Cyrillic or latin lower after lower+comma)
+        t = t.replace(/([а-яёa-z,])\n([а-яёa-z])/gi, '$1 $2');
+        return { ...b, raw: t.trim() };
+    });
+}
+
+// ──────────────────────────────────────────────
+// STRUCTURE BUILDER
+// ──────────────────────────────────────────────
+function buildStructure(norm) {
+    const sections = [];
+    let cur = null;
+    let sOrd = 0;
+
+    for (const b of norm) {
+        if (b.isPageBreak) continue;
+
+        const raw = b.raw || '';
+        const isH1 = (b.isHeading && b.hlevel === 1) || isLikelyTitle(raw, b);
+
+        if (isH1) {
+            if (!S.doc.title) S.doc.title = raw;
+            cur = { id:'sec_'+uid(), title:raw, order:sOrd++, blocks:[] };
+            sections.push(cur);
+            continue;
+        }
+
+        if (!cur) {
+            cur = { id:'sec_'+uid(), title:S.doc.title||'Основной раздел', order:sOrd++, blocks:[] };
+            sections.push(cur);
+        }
+
+        const blk = classifyBlock(b, raw);
+        cur.blocks.push({
+            id: 'blk_'+uid(),
+            ...blk,
+            srcRef: b.srcId || '',
+            status: blk.confidence >= 0.8 ? 'ok' : 'needs-review',
+        });
+    }
+
+    if (!sections.length) {
+        sections.push({ id:'sec_'+uid(), title:S.doc.title||'Основной раздел', order:0, blocks:[] });
+    }
+
+    S.doc.sections = sections;
+    if (!S.doc.title) S.doc.title = 'Новый документ';
+}
+
+function isLikelyTitle(text, b) {
+    if (b.isHeading) return false; // already handled
+    if (text.length < 4 || text.length > 100) return false;
+    // ALL CAPS short text (not a warning)
+    if (text === text.toUpperCase() && !/ВАЖНО|WARNING|CAUTION|ВНИМАНИЕ/.test(text)) return true;
+    // No period, short, few words
+    if (!text.includes('.') && !text.includes(',') && text.split(/\s+/).length <= 7) return true;
+    return false;
+}
+
+function classifyBlock(b, text) {
+    // Already table from DOCX
+    if (b.isTable) {
+        return {
+            type: b.isTableHead ? 'table-header' : 'table-row',
+            h2: '', body: text, confidence: 0.9
+        };
+    }
+
+    // Pipe-separated → table
+    if (text.includes(' | ') && text.split(' | ').length >= 2) {
+        const isHead = /^[А-ЯA-Z\s\d]+\s*\|/.test(text);
+        return { type: isHead ? 'table-header' : 'table-row', h2:'', body:text, confidence:0.8 };
+    }
+
+    // H2 heading from DOCX
+    if (b.isHeading && b.hlevel === 2) {
+        return { type:'text', h2:text, body:'', confidence:0.85 };
+    }
+
+    // Warning
+    const warnRe = /ВАЖНО|ВНИМАНИЕ|ПРЕДУПРЕЖДЕНИЕ|ОСТОРОЖНО|ЗАПРЕЩ|НЕ ДОПУСК|WARNING|CAUTION|DANGER|NOTICE/i;
+    if (warnRe.test(text)) {
+        const lines = text.split('\n');
+        const h2 = lines[0].length < 80 ? lines[0].trim() : 'ВАЖНО!';
+        const body = lines[0].length < 80 ? lines.slice(1).join('\n').trim() : text;
+        return { type:'warning', h2, body: body||text, confidence:0.9 };
+    }
+
+    // Step with label
+    const stepLabelRe = /^(Шаг|Step)\s+\d+/i;
+    if (stepLabelRe.test(text)) {
+        const lines = text.split('\n');
+        return { type:'step', h2:lines[0].trim(), body:lines.slice(1).join('\n').trim(), confidence:0.92 };
+    }
+
+    // Numbered list item
+    const numRe = /^(\d+)[.\)]\s+(.+)/;
+    const nm = text.match(numRe);
+    if (nm) {
+        return { type:'step', h2:'', body:text, confidence:0.72 };
+    }
+
+    // Bullet list → text block
+    if (/^[•·\-\*]\s/.test(text)) {
+        return { type:'text', h2:'', body:text, confidence:0.8 };
+    }
+
+    // Multi-line with short first line as h2
+    const lines = text.split('\n');
+    if (lines.length >= 2 && lines[0].length < 80 && !lines[0].endsWith('.')) {
+        return { type:'text', h2:lines[0].trim(), body:lines.slice(1).join('\n').trim(), confidence:0.7 };
+    }
+
+    return { type:'text', h2:'', body:text, confidence:0.75 };
+}
+
+function finalizeClassify() {
+    let needsReview = 0;
+    S.doc.sections.forEach(sec => {
+        sec.blocks.forEach(b => {
+            if (b.confidence < 0.75) { b.status = 'needs-review'; needsReview++; }
+        });
+    });
+    const badge = document.getElementById('warnCount');
+    if (needsReview > 0) {
+        badge.textContent = needsReview + ' требуют проверки';
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+// ──────────────────────────────────────────────
+// SCREEN 3 — REVIEW
+// ──────────────────────────────────────────────
+function renderReview() {
+    document.getElementById('docTitleInput').value = S.doc.title || '';
+    renderTree();
+    renderBlocks();
+}
+
+function renderTree() {
+    const el = document.getElementById('structTree');
+    el.innerHTML = S.doc.sections.map(sec => `
+        <div class="tree-section">
+            <div class="tree-section-title" onclick="scrollSec('${sec.id}')">
+                📄 ${esc(sec.title.slice(0,32))}${sec.title.length>32?'…':''}
+            </div>
+            ${sec.blocks.map(b => `
+                <div class="tree-block ${b.status==='needs-review'?'warn-item':''}"
+                     onclick="selectBlock('${b.id}')">
+                    ${b.status==='needs-review'?'⚠ ':''}${typeLabel(b.type)}: ${esc((b.h2||b.body||'(пусто)').slice(0,22))}…
+                </div>
+            `).join('')}
+        </div>
+    `).join('');
+}
+
+function renderBlocks() {
+    const wrap = document.getElementById('blockListWrap');
+    if (!S.doc.sections.length) {
+        wrap.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div>Нет данных</div></div>`;
+        return;
+    }
+    wrap.innerHTML = S.doc.sections.map(sec => `
+        <div class="section-group" id="sg-${sec.id}">
+            <div class="section-head">
+                <span>📄</span>
+                <div class="section-head-title"
+                     contenteditable="true"
+                     onblur="renameSection('${sec.id}',this.textContent)">${esc(sec.title)}</div>
+                <button class="btn btn-secondary btn-sm" onclick="addBlock('${sec.id}')">+ Блок</button>
+                <button class="btn btn-secondary btn-sm" style="color:var(--red)"
+                        onclick="delSection('${sec.id}')">✕</button>
+            </div>
+            <div class="block-list" id="bl-${sec.id}">
+                ${sec.blocks.length
+                    ? sec.blocks.map(b => blockHTML(b)).join('')
+                    : '<div class="text-muted" style="padding:12px;text-align:center">Раздел пуст — добавьте блок</div>'}
+            </div>
+        </div>
+    `).join('');
+}
+
+function blockHTML(b) {
+    const sel = S.selId === b.id;
+    const preview = (b.body || b.h2 || '').slice(0, 140);
+    return `
+        <div class="block-item ${sel?'sel':''} ${b.status==='needs-review'?'warn':''} ${b.status==='conflict'?'conflict':''}"
+             id="bi-${b.id}" onclick="selectBlock('${b.id}')">
+            <div class="block-head">
+                <span class="badge ${badgeCls(b.type)}">${typeLabel(b.type)}</span>
+                ${b.status==='needs-review'?'<span class="needs-badge">⚠ Проверить</span>':''}
+                <span class="conf ${confCls(b.confidence)} ml-auto"
+                      title="Уверенность классификации">${Math.round(b.confidence*100)}%</span>
+            </div>
+            <div class="block-body">
+                ${b.h2 ? `<div class="block-h2">${esc(b.h2)}</div>` : ''}
+                <div class="block-preview">${esc(preview)||'<span style="color:var(--border)">Пустой блок</span>'}</div>
+            </div>
+        </div>
+    `;
+}
+
+function selectBlock(id) {
+    S.selId = id;
+    const b = findBlock(id);
+    if (!b) return;
+
+    // Highlight
+    document.querySelectorAll('.block-item').forEach(el => el.classList.remove('sel'));
+    document.getElementById('bi-'+id)?.classList.add('sel');
+
+    // Fill editor
+    document.getElementById('editH2').value = b.h2 || '';
+    document.getElementById('editBody').value = b.body || '';
+    document.querySelectorAll('.type-btn').forEach(btn => {
+        btn.classList.toggle('on', btn.dataset.type === b.type);
+    });
+
+    document.getElementById('editorPanel').classList.remove('hidden');
+}
+
+function closeEditor() {
+    S.selId = null;
+    document.querySelectorAll('.block-item').forEach(el => el.classList.remove('sel'));
+    document.getElementById('editorPanel').classList.add('hidden');
+}
+
+function findBlock(id) {
+    for (const sec of S.doc.sections) {
+        const b = sec.blocks.find(x => x.id === id);
+        if (b) return b;
+    }
+    return null;
+}
+
+function findBlockSec(id) {
+    for (const sec of S.doc.sections) {
+        const b = sec.blocks.find(x => x.id === id);
+        if (b) return { b, sec };
+    }
+    return null;
+}
+
+document.getElementById('btnSaveBlock').addEventListener('click', () => {
+    if (!S.selId) return;
+    const b = findBlock(S.selId);
+    if (!b) return;
+    b.h2 = document.getElementById('editH2').value.trim();
+    b.body = document.getElementById('editBody').value.trim();
+    b.type = document.querySelector('.type-btn.on')?.dataset.type || b.type;
+    b.status = 'ok';
+    b.confidence = 1.0;
+    renderBlocks();
+    renderTree();
+    // Re-select
+    document.getElementById('bi-'+b.id)?.classList.add('sel');
+    toast('Блок сохранён');
+});
+
+document.getElementById('btnDupBlock').addEventListener('click', () => {
+    if (!S.selId) return;
+    const r = findBlockSec(S.selId);
+    if (!r) return;
+    const clone = { ...r.b, id:'blk_'+uid() };
+    const idx = r.sec.blocks.indexOf(r.b);
+    r.sec.blocks.splice(idx+1, 0, clone);
+    renderBlocks();
+    renderTree();
+    selectBlock(clone.id);
+    toast('Блок продублирован');
+});
+
+document.getElementById('btnDelBlock').addEventListener('click', () => {
+    if (!S.selId) return;
+    const r = findBlockSec(S.selId);
+    if (!r) return;
+    r.sec.blocks = r.sec.blocks.filter(b => b.id !== S.selId);
+    S.selId = null;
+    document.getElementById('editorPanel').classList.add('hidden');
+    renderBlocks();
+    renderTree();
+    toast('Блок удалён');
+});
+
+document.getElementById('btnAddSection').addEventListener('click', () => {
+    const title = prompt('Название нового раздела:');
+    if (!title) return;
+    S.doc.sections.push({ id:'sec_'+uid(), title, order:S.doc.sections.length, blocks:[] });
+    renderBlocks();
+    renderTree();
+});
+
+document.getElementById('docTitleInput').addEventListener('input', function() {
+    S.doc.title = this.value;
+});
+
+function renameSection(id, title) {
+    const sec = S.doc.sections.find(s => s.id === id);
+    if (sec) sec.title = title.trim() || sec.title;
+    renderTree();
+}
+
+function scrollSec(id) {
+    document.getElementById('sg-'+id)?.scrollIntoView({ behavior:'smooth' });
+}
+
+function addBlock(secId) {
+    const sec = S.doc.sections.find(s => s.id === secId);
+    if (!sec) return;
+    const b = {
+        id:'blk_'+uid(), type:'text', h2:'', body:'Новый блок',
+        confidence:1, status:'ok', srcRef:'manual'
+    };
+    sec.blocks.push(b);
+    renderBlocks();
+    renderTree();
+    selectBlock(b.id);
+    setTimeout(() => document.getElementById('bi-'+b.id)?.scrollIntoView({behavior:'smooth'}), 80);
+}
+
+function delSection(id) {
+    if (!confirm('Удалить раздел вместе со всеми блоками?')) return;
+    S.doc.sections = S.doc.sections.filter(s => s.id !== id);
+    renderBlocks();
+    renderTree();
+}
+
+// ──────────────────────────────────────────────
+// SCREEN 4 — EXPORT
+// ──────────────────────────────────────────────
+function makeFigmaTXT() {
+    const lines = [];
+    S.doc.sections.forEach(sec => {
+        lines.push('# ' + sec.title);
+        lines.push('');
+        sec.blocks.forEach(b => {
+            if (b.type === 'empty-page') {
+                lines.push('[empty-page]');
+                lines.push('##');
+                lines.push('');
+                return;
+            }
+            lines.push('[' + b.type + ']');
+            lines.push('## ' + (b.h2 || ''));
+            if (b.body) lines.push(b.body);
+            lines.push('');
+        });
+    });
+    return lines.join('\n').trim();
+}
+
+function makeJSON() {
+    return JSON.stringify(S.doc, null, 2);
+}
+
+function validate() {
+    const errors = [], warnings = [];
+    if (!S.doc.title) errors.push('Документ не имеет названия');
+    if (!S.doc.sections.length) { errors.push('Нет разделов'); return {errors,warnings}; }
+
+    S.doc.sections.forEach((sec, si) => {
+        if (!sec.title) warnings.push(`Раздел ${si+1}: нет заголовка`);
+        if (!sec.blocks.length) warnings.push(`Раздел "${sec.title}": пустой`);
+        sec.blocks.forEach((b, bi) => {
+            if ((b.type==='warning'||b.type==='step') && !b.body && !b.h2)
+                errors.push(`Раздел "${sec.title}", блок ${bi+1} [${b.type}]: пустой`);
+            if ((b.type==='table-header'||b.type==='table-row') && !b.body)
+                errors.push(`Раздел "${sec.title}", блок ${bi+1}: пустая таблица`);
+            if (b.status === 'needs-review')
+                warnings.push(`Раздел "${sec.title}", блок ${bi+1}: требует проверки`);
+        });
+    });
+    return {errors, warnings};
+}
+
+function renderExport() {
+    const txt = makeFigmaTXT();
+    const json = makeJSON();
+    const {errors, warnings} = validate();
+
+    document.getElementById('prevTxt').textContent = txt;
+    document.getElementById('prevJson').textContent = json;
+
+    const items = [];
+    if (!errors.length && !warnings.length) {
+        items.push('<div class="val-item val-ok">✓ Документ прошёл валидацию — готов для Figma-плагина</div>');
+    }
+    errors.forEach(e => items.push(`<div class="val-item val-err">✕ ${esc(e)}</div>`));
+    warnings.forEach(w => items.push(`<div class="val-item val-warn">⚠ ${esc(w)}</div>`));
+    document.getElementById('valReport').innerHTML = items.join('');
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+        this.classList.add('on');
+        const name = this.dataset.tab;
+        ['txt','json','val'].forEach(n => {
+            document.getElementById('tab-'+n).classList.toggle('hidden', n !== name);
+        });
+    });
+});
+
+document.getElementById('btnDlTxt').addEventListener('click', () => {
+    dlFile(makeFigmaTXT(), (S.doc.title||'document')+'.txt', 'text/plain;charset=utf-8');
+});
+
+document.getElementById('btnDlJson').addEventListener('click', () => {
+    dlFile(makeJSON(), (S.doc.title||'document')+'.json', 'application/json');
+});
+
+document.getElementById('btnCopyTxt').addEventListener('click', () => {
+    const txt = makeFigmaTXT();
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt).then(() => toast('TXT скопирован в буфер обмена'));
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        toast('TXT скопирован');
+    }
+});
+
+</script>
 </body>
 </html>
