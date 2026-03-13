@@ -1053,31 +1053,45 @@ async function extractPDF(file) {
         const page = await pdf.getPage(pn);
         const content = await page.getTextContent();
 
-        // Group items into lines by Y coordinate
+        // Group items into lines by Y coordinate (2 px precision)
         const lineMap = new Map();
         for (const item of content.items) {
             if (!item.str.trim()) continue;
-            const y = Math.round(item.transform[5] / 4) * 4;
-            if (!lineMap.has(y)) lineMap.set(y, { y, texts: [], fontSize: 0 });
+            const y = Math.round(item.transform[5] / 2) * 2;
+            if (!lineMap.has(y)) lineMap.set(y, { y, texts: [], fontSize: 0, x: item.transform[4] });
             const ln = lineMap.get(y);
             ln.texts.push(item.str);
             ln.fontSize = Math.max(ln.fontSize, Math.abs(item.transform[3]));
         }
+        if (!lineMap.size) continue;
 
-        // Sort lines top-to-bottom
-        const lines = Array.from(lineMap.values()).sort((a,b) => b.y - a.y);
-        let pageText = '';
-        for (const ln of lines) {
-            const t = ln.texts.join('').trim();
-            if (t) pageText += t + '\n';
-        }
+        // Sort lines top-to-bottom (PDF y: bottom=0, so descending)
+        const lines = Array.from(lineMap.values()).sort((a, b) => b.y - a.y);
+
+        // Median gap between consecutive lines = typical line height
+        const gaps = [];
+        for (let i = 1; i < lines.length; i++) gaps.push(lines[i-1].y - lines[i].y);
+        const medGap = gaps.length
+            ? [...gaps].sort((a,b)=>a-b)[Math.floor(gaps.length/2)]
+            : 12;
 
         if (pn > 1) blocks.push({ raw:'', isPageBreak:true });
 
-        const paras = pageText.split(/\n{2,}/).map(p => p.replace(/\n/g,' ').trim()).filter(Boolean);
-        for (const para of paras) {
-            blocks.push({ raw: para, page: pn, src:'pdf' });
+        // Group lines into paragraphs: gap > 1.5× median = paragraph break
+        let para = [];
+        const flush = () => {
+            if (!para.length) return;
+            const text = para.map(l => l.texts.join(' ').trim()).join(' ').trim();
+            const fontSize = Math.max(...para.map(l => l.fontSize));
+            if (text) blocks.push({ raw: text, page: pn, src: 'pdf', fontSize });
+            para = [];
+        };
+        for (let i = 0; i < lines.length; i++) {
+            para.push(lines[i]);
+            const gap = i < lines.length - 1 ? lines[i].y - lines[i+1].y : Infinity;
+            if (gap > medGap * 1.5) flush();
         }
+        flush();
     }
     return blocks;
 }
