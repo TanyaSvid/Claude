@@ -386,6 +386,24 @@
         }
         .type-select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
 
+        /* ─── SECTION HEADER TYPE SELECT ─── */
+        .sec-type-sel {
+            appearance: none; -webkit-appearance: none;
+            border: 1px solid #C7D2FE;
+            background-color: #fff;
+            border-radius: 6px;
+            padding: 3px 20px 3px 8px;
+            font-size: 11px; font-weight: 700;
+            color: var(--primary-dark);
+            cursor: pointer; font-family: inherit;
+            flex-shrink: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234F46E5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 5px center;
+            background-size: 8px 5px;
+        }
+        .sec-type-sel:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
         .block-body { padding: 8px 10px; }
         .block-h2 { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
         .block-preview {
@@ -1234,10 +1252,14 @@ function buildStructure(norm) {
 function isLikelyTitle(text, b) {
     if (b.isHeading) return false; // already handled
     if (text.length < 4 || text.length > 100) return false;
-    // ALL CAPS short text (not a warning)
-    if (text === text.toUpperCase() && !/ВАЖНО|WARNING|CAUTION|ВНИМАНИЕ/.test(text)) return true;
-    // No period, short, few words
-    if (!text.includes('.') && !text.includes(',') && text.split(/\s+/).length <= 7) return true;
+    // NEVER treat bullet/list items as titles
+    if (/^[•·\-\*\d]/.test(text)) return false;
+    // NEVER treat warning-related words as titles — they go through classifyBlock as warning
+    if (/ВАЖНО|ВНИМАНИЕ|ПРЕДУПРЕЖДЕНИЕ|ОСТОРОЖНО|ЗАПРЕЩ|WARNING|CAUTION|DANGER|NOTICE/i.test(text)) return false;
+    // ALL CAPS short text → title
+    if (text === text.toUpperCase() && text.length < 60) return true;
+    // Short text, no terminal punctuation, few words → title
+    if (!text.endsWith('.') && !text.includes(',') && text.split(/\s+/).length <= 6) return true;
     return false;
 }
 
@@ -1354,6 +1376,16 @@ function renderBlocks() {
                 <div class="section-head-title"
                      contenteditable="true"
                      onblur="renameSection('${sec.id}',this.textContent)">${esc(sec.title)}</div>
+                <select class="sec-type-sel" title="Тип раздела"
+                        onclick="event.stopPropagation()"
+                        onchange="demoteSection('${sec.id}',this.value)">
+                    <option value="page">📄 Страница</option>
+                    <option value="warning">⚠ Внимание</option>
+                    <option value="text">Текст</option>
+                    <option value="step">Шаг</option>
+                    <option value="table-header">Таблица шапка</option>
+                    <option value="table-row">Таблица строка</option>
+                </select>
                 <button class="btn btn-secondary btn-sm" onclick="addBlock('${sec.id}')">+ Блок</button>
                 <button class="btn btn-secondary btn-sm" style="color:var(--red)"
                         onclick="delSection('${sec.id}')">✕</button>
@@ -1631,6 +1663,51 @@ function renameSection(id, title) {
     const sec = S.doc.sections.find(s => s.id === id);
     if (sec) sec.title = title.trim() || sec.title;
     renderTree();
+}
+
+// Convert a section header into a block inside the previous (or new default) section.
+// Called when user picks a block type from the section's type dropdown.
+function demoteSection(id, type) {
+    if (type === 'page') return; // "Страница" = keep as section, no-op
+
+    const secIdx = S.doc.sections.findIndex(s => s.id === id);
+    if (secIdx < 0) return;
+    const sec = S.doc.sections[secIdx];
+
+    // Find or create a target section to receive the demoted content
+    let target;
+    if (secIdx > 0) {
+        target = S.doc.sections[secIdx - 1];
+    } else {
+        // No preceding section — insert a generic one before this
+        target = { id:'sec_'+uid(), title:'Основной раздел', order:0, blocks:[] };
+        S.doc.sections.unshift(target);
+        // secIdx is now 1, but we already have a reference to sec
+    }
+
+    // Build a block from the section title
+    const titleBlock = {
+        id: 'blk_'+uid(),
+        type,
+        h2: type === 'warning' ? sec.title : '',
+        body: type === 'warning' ? '' : sec.title,
+        confidence: 1.0,
+        status: 'ok',
+        srcRef: 'manual',
+    };
+
+    // Append title block + all child blocks of demoted section to target
+    target.blocks = [...target.blocks, titleBlock, ...sec.blocks];
+
+    // Remove the demoted section
+    S.doc.sections = S.doc.sections.filter(s => s.id !== id);
+
+    renderBlocks();
+    renderTree();
+    selectBlock(titleBlock.id);
+    toast(`"${sec.title}" → блок [${typeLabel(type)}]`);
+    setTimeout(() => document.getElementById('bi-'+titleBlock.id)
+        ?.scrollIntoView({ behavior:'smooth', block:'nearest' }), 80);
 }
 
 function scrollSec(id) {
