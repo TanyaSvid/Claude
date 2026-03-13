@@ -370,6 +370,22 @@
             background: var(--yellow-light); padding: 1px 6px; border-radius: 10px;
         }
 
+        /* ─── INLINE TYPE SELECT ─── */
+        .type-select {
+            appearance: none; -webkit-appearance: none;
+            border: none; outline: none;
+            padding: 2px 18px 2px 7px;
+            border-radius: 20px;
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .4px;
+            cursor: pointer; font-family: inherit;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 5px center;
+            background-size: 8px 5px;
+        }
+        .type-select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+
         .block-body { padding: 8px 10px; }
         .block-h2 { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
         .block-preview {
@@ -1361,7 +1377,16 @@ function blockHTML(b) {
             <div class="block-head">
                 <input type="checkbox" class="blk-chk" title="Выбрать для объединения"
                        ${msel?'checked':''} onclick="toggleChk('${b.id}',event)">
-                <span class="badge ${badgeCls(b.type)}">${typeLabel(b.type)}</span>
+                <select class="type-select ${badgeCls(b.type)}"
+                        onclick="event.stopPropagation()"
+                        onchange="quickSetType('${b.id}',this.value)">
+                    <option value="text"         ${b.type==='text'        ?'selected':''}>Текст</option>
+                    <option value="warning"      ${b.type==='warning'     ?'selected':''}>⚠ Внимание</option>
+                    <option value="step"         ${b.type==='step'        ?'selected':''}>Шаг</option>
+                    <option value="table-header" ${b.type==='table-header'?'selected':''}>Таблица шапка</option>
+                    <option value="table-row"    ${b.type==='table-row'   ?'selected':''}>Таблица строка</option>
+                    <option value="empty-page"   ${b.type==='empty-page'  ?'selected':''}>Пустая стр.</option>
+                </select>
                 ${b.status==='needs-review'?'<span class="needs-badge">⚠ Проверить</span>':''}
                 <span class="conf ${confCls(b.confidence)} ml-auto"
                       title="Уверенность классификации">${Math.round(b.confidence*100)}%</span>
@@ -1397,6 +1422,36 @@ function closeEditor() {
     S.selId = null;
     document.querySelectorAll('.block-item').forEach(el => el.classList.remove('sel'));
     document.getElementById('editorPanel').classList.add('hidden');
+}
+
+// ──────────────────────────────────────────────
+// QUICK TYPE CHANGE (inline dropdown on block card)
+// ──────────────────────────────────────────────
+
+function quickSetType(id, type) {
+    const b = findBlock(id);
+    if (!b) return;
+    b.type = type;
+    b.status = 'ok';
+    b.confidence = 1.0;
+
+    // Update the select's badge color class without re-rendering the whole list
+    const el = document.getElementById('bi-' + id);
+    if (el) {
+        const sel = el.querySelector('.type-select');
+        if (sel) {
+            sel.className = 'type-select ' + badgeCls(type);
+        }
+    }
+
+    // Sync editor panel if this block is currently open
+    if (S.selId === id) {
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.classList.toggle('on', btn.dataset.type === type);
+        });
+    }
+
+    renderTree();
 }
 
 // ──────────────────────────────────────────────
