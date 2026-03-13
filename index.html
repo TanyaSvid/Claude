@@ -359,7 +359,17 @@
         .badge-step { background: #DBEAFE; color: #1E40AF; }
         .badge-table-header { background: #F3E8FF; color: #6B21A8; }
         .badge-table-row { background: #EDE9FE; color: #5B21B6; }
-        .badge-empty-page { background: #F1F5F9; color: #475569; }
+        .badge-pagebreak { background: #F1F5F9; color: #475569; }
+
+        /* ─── IMAGE POSITION BUTTONS ─── */
+        .img-btn {
+            border: 2px solid var(--border); border-radius: 6px;
+            padding: 6px 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: var(--white); font-family: inherit;
+            transition: border-color .15s, background .15s;
+        }
+        .img-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+        .img-btn.on { border-color: var(--primary); background: var(--primary); color: var(--white); }
 
         .conf { font-size: 11px; }
         .conf-hi { color: var(--green); }
@@ -656,12 +666,25 @@
                                 <button class="type-btn" data-type="step">📋 Шаг</button>
                                 <button class="type-btn" data-type="table-header">Таблица<br>шапка</button>
                                 <button class="type-btn" data-type="table-row">Таблица<br>строка</button>
-                                <button class="type-btn" data-type="empty-page">Пустая<br>стр.</button>
+                                <button class="type-btn" data-type="pagebreak">— Разрыв<br>стр.</button>
+                            </div>
+                        </div>
+
+                        <!-- Image position — visible only for step blocks -->
+                        <div class="editor-field" id="imageField" style="display:none">
+                            <label class="editor-label">Фото в шаге
+                                <span style="font-weight:400;text-transform:none;letter-spacing:0">
+                                    — добавит <code>[image:…]</code> тег</span></label>
+                            <div class="type-grid">
+                                <button class="img-btn on" data-img="">Без фото</button>
+                                <button class="img-btn" data-img="left">← Слева</button>
+                                <button class="img-btn" data-img="right">Справа →</button>
+                                <button class="img-btn" data-img="bottom">↓ Снизу</button>
                             </div>
                         </div>
 
                         <div class="editor-field">
-                            <label class="editor-label">Заголовок H2</label>
+                            <label class="editor-label">Заголовок (## H2)</label>
                             <input class="editor-input" id="editH2"
                                    placeholder="Оставьте пустым если нет">
                         </div>
@@ -780,15 +803,15 @@ function extIcon(ext) {
 }
 
 function typeLabel(t) {
-    return {text:'Текст',warning:'Внимание',step:'Шаг',
-            'table-header':'Таблица (шапка)','table-row':'Таблица (строка)',
-            'empty-page':'Пустая страница'}[t] || t;
+    return {text:'Текст', warning:'Внимание', step:'Шаг',
+            'table-header':'Таблица (шапка)', 'table-row':'Таблица (строка)',
+            pagebreak:'Разрыв страницы'}[t] || t;
 }
 
 function badgeCls(t) {
-    return {text:'badge-text',warning:'badge-warning',step:'badge-step',
-            'table-header':'badge-table-header','table-row':'badge-table-row',
-            'empty-page':'badge-empty-page'}[t] || 'badge-text';
+    return {text:'badge-text', warning:'badge-warning', step:'badge-step',
+            'table-header':'badge-table-header', 'table-row':'badge-table-row',
+            pagebreak:'badge-pagebreak'}[t] || 'badge-text';
 }
 
 function confCls(c) {
@@ -1434,10 +1457,10 @@ function blockHTML(b) {
                         onchange="quickSetType('${b.id}',this.value)">
                     <option value="text"         ${b.type==='text'        ?'selected':''}>Текст</option>
                     <option value="warning"      ${b.type==='warning'     ?'selected':''}>⚠ Внимание</option>
-                    <option value="step"         ${b.type==='step'        ?'selected':''}>Шаг</option>
+                    <option value="step"         ${b.type==='step'        ?'selected':''}>📋 Шаг</option>
                     <option value="table-header" ${b.type==='table-header'?'selected':''}>Таблица шапка</option>
                     <option value="table-row"    ${b.type==='table-row'   ?'selected':''}>Таблица строка</option>
-                    <option value="empty-page"   ${b.type==='empty-page'  ?'selected':''}>Пустая стр.</option>
+                    <option value="pagebreak"    ${b.type==='pagebreak'   ?'selected':''}>— Разрыв стр.</option>
                 </select>
                 ${b.status==='needs-review'?'<span class="needs-badge">⚠ Проверить</span>':''}
                 <span class="conf ${confCls(b.confidence)} ml-auto"
@@ -1446,6 +1469,7 @@ function blockHTML(b) {
             <div class="block-body">
                 ${b.h2 ? `<div class="block-h2">${esc(b.h2)}</div>` : ''}
                 <div class="block-preview">${esc(preview)||'<span style="color:var(--border)">Пустой блок</span>'}</div>
+                ${b.type==='step'&&b.image ? `<div style="font-size:11px;color:var(--primary);margin-top:3px;font-weight:600">[image:${b.image}]</div>` : ''}
             </div>
         </div>
     `;
@@ -1466,6 +1490,7 @@ function selectBlock(id) {
     document.querySelectorAll('.type-btn').forEach(btn => {
         btn.classList.toggle('on', btn.dataset.type === b.type);
     });
+    syncImageField(b);
 
     document.getElementById('editorPanel').classList.remove('hidden');
 }
@@ -1475,6 +1500,26 @@ function closeEditor() {
     document.querySelectorAll('.block-item').forEach(el => el.classList.remove('sel'));
     document.getElementById('editorPanel').classList.add('hidden');
 }
+
+// Show/hide [image:…] selector and sync its state
+function syncImageField(b) {
+    const field = document.getElementById('imageField');
+    const isStep = b.type === 'step';
+    field.style.display = isStep ? '' : 'none';
+    if (isStep) {
+        document.querySelectorAll('.img-btn').forEach(btn => {
+            btn.classList.toggle('on', btn.dataset.img === (b.image || ''));
+        });
+    }
+}
+
+// Wire image-position buttons (delegated)
+document.getElementById('imageField').addEventListener('click', e => {
+    const btn = e.target.closest('.img-btn');
+    if (!btn || !S.selId) return;
+    document.querySelectorAll('.img-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+});
 
 // ──────────────────────────────────────────────
 // QUICK TYPE CHANGE (inline dropdown on block card)
@@ -1501,6 +1546,7 @@ function quickSetType(id, type) {
         document.querySelectorAll('.type-btn').forEach(btn => {
             btn.classList.toggle('on', btn.dataset.type === type);
         });
+        syncImageField(b);
     }
 
     renderTree();
@@ -1561,7 +1607,7 @@ function mergeSelected() {
     const first = selected[0];
 
     // Choose type: keep the "heaviest" semantic type
-    const pri = { warning:4, step:3, 'table-header':2, 'table-row':2, text:1, 'empty-page':0 };
+    const pri = { warning:4, step:3, 'table-header':2, 'table-row':2, text:1, pagebreak:0 };
     const mergedType = selected.reduce((best, x) =>
         (pri[x.b.type] || 0) > (pri[best] || 0) ? x.b.type : best,
         first.b.type);
@@ -1635,6 +1681,9 @@ document.getElementById('btnSaveBlock').addEventListener('click', () => {
     b.h2 = document.getElementById('editH2').value.trim();
     b.body = document.getElementById('editBody').value.trim();
     b.type = document.querySelector('.type-btn.on')?.dataset.type || b.type;
+    b.image = b.type === 'step'
+        ? (document.querySelector('.img-btn.on')?.dataset.img || null) || null
+        : null;
     b.status = 'ok';
     b.confidence = 1.0;
     renderBlocks();
@@ -1766,22 +1815,61 @@ function delSection(id) {
 // ──────────────────────────────────────────────
 function makeFigmaTXT() {
     const lines = [];
+
     S.doc.sections.forEach(sec => {
+        // Section title → # Heading (always starts a new page in plugin)
         lines.push('# ' + sec.title);
         lines.push('');
+
+        // Collect consecutive table blocks to emit as a proper Markdown table
+        let tableQueue = [];
+
+        function flushTable() {
+            if (!tableQueue.length) return;
+            const header = tableQueue.find(b => b.type === 'table-header');
+            const dataRows = tableQueue.filter(b => b.type === 'table-row');
+
+            const bodyToRow = body => {
+                // already pipe-formatted?
+                if (body.startsWith('|')) return body;
+                // convert tab/multi-space separated → pipe row
+                return '| ' + body.split(/\t|\s{2,}/).map(c => c.trim()).filter(Boolean).join(' | ') + ' |';
+            };
+
+            if (header) {
+                const rowStr = bodyToRow(header.body);
+                lines.push(rowStr);
+                // separator: count pipe-delimited columns
+                const cols = (rowStr.match(/(?<=\|)[^|]+/g) || []).length;
+                lines.push('| ' + Array(cols).fill('---').join(' | ') + ' |');
+            }
+            dataRows.forEach(b => lines.push(bodyToRow(b.body)));
+            lines.push('');
+            tableQueue = [];
+        }
+
         sec.blocks.forEach(b => {
-            if (b.type === 'empty-page') {
-                lines.push('[empty-page]');
-                lines.push('##');
+            if (b.type === 'table-header' || b.type === 'table-row') {
+                tableQueue.push(b);
+                return;
+            }
+            flushTable();
+
+            if (b.type === 'pagebreak') {
+                lines.push('---');
                 lines.push('');
                 return;
             }
-            lines.push('[' + b.type + ']');
-            lines.push('## ' + (b.h2 || ''));
+
+            // step / text / warning → ## h2 + body + [image:…]
+            if (b.h2) lines.push('## ' + b.h2);
             if (b.body) lines.push(b.body);
+            if (b.type === 'step' && b.image) lines.push('[image:' + b.image + ']');
             lines.push('');
         });
+        flushTable();
     });
+
     return lines.join('\n').trim();
 }
 
@@ -1798,10 +1886,10 @@ function validate() {
         if (!sec.title) warnings.push(`Раздел ${si+1}: нет заголовка`);
         if (!sec.blocks.length) warnings.push(`Раздел "${sec.title}": пустой`);
         sec.blocks.forEach((b, bi) => {
-            if ((b.type==='warning'||b.type==='step') && !b.body && !b.h2)
-                errors.push(`Раздел "${sec.title}", блок ${bi+1} [${b.type}]: пустой`);
+            if ((b.type==='warning'||b.type==='step'||b.type==='text') && !b.body && !b.h2)
+                errors.push(`Раздел "${sec.title}", блок ${bi+1} [${typeLabel(b.type)}]: пустой`);
             if ((b.type==='table-header'||b.type==='table-row') && !b.body)
-                errors.push(`Раздел "${sec.title}", блок ${bi+1}: пустая таблица`);
+                errors.push(`Раздел "${sec.title}", блок ${bi+1}: пустая строка таблицы`);
             if (b.status === 'needs-review')
                 warnings.push(`Раздел "${sec.title}", блок ${bi+1}: требует проверки`);
         });
