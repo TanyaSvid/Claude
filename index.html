@@ -354,6 +354,8 @@
             font-size: 10px; font-weight: 700; padding: 2px 7px;
             border-radius: 20px; text-transform: uppercase; letter-spacing: .4px;
         }
+        .badge-h1 { background: #FEE2E2; color: #991B1B; font-weight: 800; }
+        .badge-h2 { background: #FFEDD5; color: #9A3412; font-weight: 700; }
         .badge-text { background: #E5E7EB; color: #374151; }
         .badge-warning { background: #FEF3C7; color: #92400E; }
         .badge-step { background: #DBEAFE; color: #1E40AF; }
@@ -661,6 +663,8 @@
                         <div class="editor-field">
                             <label class="editor-label">Тип блока</label>
                             <div class="type-grid">
+                                <button class="type-btn" data-type="h1"># H1 Заголовок</button>
+                                <button class="type-btn" data-type="h2">## H2 Подзаголовок</button>
                                 <button class="type-btn" data-type="text">Текст</button>
                                 <button class="type-btn" data-type="warning">⚠ Внимание</button>
                                 <button class="type-btn" data-type="step">📋 Шаг</button>
@@ -803,13 +807,13 @@ function extIcon(ext) {
 }
 
 function typeLabel(t) {
-    return {text:'Текст', warning:'Внимание', step:'Шаг',
+    return {h1:'# H1', h2:'## H2', text:'Текст', warning:'Внимание', step:'Шаг',
             'table-header':'Таблица (шапка)', 'table-row':'Таблица (строка)',
             pagebreak:'Разрыв страницы'}[t] || t;
 }
 
 function badgeCls(t) {
-    return {text:'badge-text', warning:'badge-warning', step:'badge-step',
+    return {h1:'badge-h1', h2:'badge-h2', text:'badge-text', warning:'badge-warning', step:'badge-step',
             'table-header':'badge-table-header', 'table-row':'badge-table-row',
             pagebreak:'badge-pagebreak'}[t] || 'badge-text';
 }
@@ -1321,9 +1325,10 @@ function classifyBlock(b, text) {
         return { type: isHead ? 'table-header' : 'table-row', h2:'', body:text, confidence:0.8 };
     }
 
-    // H2 heading from DOCX
-    if (b.isHeading && b.hlevel === 2) {
-        return { type:'text', h2:text, body:'', confidence:0.85 };
+    // Headings from DOCX/PDF
+    if (b.isHeading) {
+        const t = b.hlevel === 1 ? 'h1' : 'h2';
+        return { type: t, h2: text, body: '', confidence: 0.9 };
     }
 
     // Warning
@@ -1455,6 +1460,8 @@ function blockHTML(b) {
                 <select class="type-select ${badgeCls(b.type)}"
                         onclick="event.stopPropagation()"
                         onchange="quickSetType('${b.id}',this.value)">
+                    <option value="h1"           ${b.type==='h1'          ?'selected':''}># H1 Заголовок</option>
+                    <option value="h2"           ${b.type==='h2'          ?'selected':''}>## H2 Подзаголовок</option>
                     <option value="text"         ${b.type==='text'        ?'selected':''}>Текст</option>
                     <option value="warning"      ${b.type==='warning'     ?'selected':''}>⚠ Внимание</option>
                     <option value="step"         ${b.type==='step'        ?'selected':''}>📋 Шаг</option>
@@ -1607,7 +1614,7 @@ function mergeSelected() {
     const first = selected[0];
 
     // Choose type: keep the "heaviest" semantic type
-    const pri = { warning:4, step:3, 'table-header':2, 'table-row':2, text:1, pagebreak:0 };
+    const pri = { h1:6, h2:5, warning:4, step:3, 'table-header':2, 'table-row':2, text:1, pagebreak:0 };
     const mergedType = selected.reduce((best, x) =>
         (pri[x.b.type] || 0) > (pri[best] || 0) ? x.b.type : best,
         first.b.type);
@@ -1861,6 +1868,18 @@ function makeFigmaTXT() {
                 return;
             }
 
+            if (b.type === 'h1') {
+                lines.push('# ' + (b.h2 || b.body || ''));
+                lines.push('');
+                return;
+            }
+
+            if (b.type === 'h2') {
+                lines.push('## ' + (b.h2 || b.body || ''));
+                lines.push('');
+                return;
+            }
+
             // step / text / warning → ## h2 + body + [image:…]
             if (b.h2) lines.push('## ' + b.h2);
             if (b.body) lines.push(b.body);
@@ -1886,7 +1905,7 @@ function validate() {
         if (!sec.title) warnings.push(`Раздел ${si+1}: нет заголовка`);
         if (!sec.blocks.length) warnings.push(`Раздел "${sec.title}": пустой`);
         sec.blocks.forEach((b, bi) => {
-            if ((b.type==='warning'||b.type==='step'||b.type==='text') && !b.body && !b.h2)
+            if ((b.type==='h1'||b.type==='h2'||b.type==='warning'||b.type==='step'||b.type==='text') && !b.body && !b.h2)
                 errors.push(`Раздел "${sec.title}", блок ${bi+1} [${typeLabel(b.type)}]: пустой`);
             if ((b.type==='table-header'||b.type==='table-row') && !b.body)
                 errors.push(`Раздел "${sec.title}", блок ${bi+1}: пустая строка таблицы`);
