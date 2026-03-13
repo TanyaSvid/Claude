@@ -322,6 +322,25 @@
         .block-item.sel { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
         .block-item.warn { border-color: #FDE68A; }
         .block-item.conflict { border-color: #FCA5A5; }
+        .block-item.msel { border-color: #8B5CF6; box-shadow: 0 0 0 3px #EDE9FE; }
+
+        /* ─── MERGE BAR ─── */
+        .merge-bar {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 10px 14px;
+            background: #1E1B4B; color: #fff;
+            border-radius: var(--r);
+            margin-bottom: 12px;
+            position: sticky; top: 66px; z-index: 50;
+            box-shadow: var(--shadow-md);
+        }
+        .merge-bar .merge-count { font-size: 14px; font-weight: 600; flex: 1; min-width: 120px; }
+
+        /* ─── CHECKBOX ─── */
+        .blk-chk {
+            width: 15px; height: 15px; cursor: pointer;
+            accent-color: var(--primary); flex-shrink: 0;
+        }
 
         .block-head {
             display: flex; align-items: center; gap: 8px;
@@ -568,6 +587,16 @@
 
                 <!-- Center: blocks -->
                 <div class="review-center">
+                    <!-- Merge action bar (appears when 2+ blocks checked) -->
+                    <div id="mergeBar" class="merge-bar hidden">
+                        <span class="merge-count" id="mergeCount">0 блоков выбрано</span>
+                        <button class="btn btn-secondary btn-sm"
+                                onclick="clearMultiSel()" style="color:#1E1B4B;">Сбросить</button>
+                        <button class="btn btn-sm"
+                                style="background:#8B5CF6;color:#fff;"
+                                onclick="mergeSelected()">⬡ Слить в один</button>
+                    </div>
+
                     <div id="blockListWrap"></div>
                 </div>
 
@@ -677,6 +706,7 @@ const S = {
     pastedText: '',
     doc: newDoc(),
     selId: null,      // selected block id
+    multiSel: new Set(), // multi-selected block ids for merge
 };
 
 function newDoc() {
@@ -765,6 +795,12 @@ function goTo(name) {
 // ──────────────────────────────────────────────
 const uploadZone = document.getElementById('uploadZone');
 const fileInput  = document.getElementById('fileInput');
+
+// Make the whole upload zone clickable (not just the button)
+uploadZone.addEventListener('click', e => {
+    if (e.target.closest('button')) return; // button handles itself
+    document.getElementById('fileInput').click();
+});
 
 uploadZone.addEventListener('dragover', e => {
     e.preventDefault();
@@ -1289,6 +1325,7 @@ function renderTree() {
 }
 
 function renderBlocks() {
+    updateMergeBar();
     const wrap = document.getElementById('blockListWrap');
     if (!S.doc.sections.length) {
         wrap.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div>Нет данных</div></div>`;
@@ -1316,11 +1353,14 @@ function renderBlocks() {
 
 function blockHTML(b) {
     const sel = S.selId === b.id;
+    const msel = S.multiSel.has(b.id);
     const preview = (b.body || b.h2 || '').slice(0, 140);
     return `
-        <div class="block-item ${sel?'sel':''} ${b.status==='needs-review'?'warn':''} ${b.status==='conflict'?'conflict':''}"
+        <div class="block-item ${sel?'sel':''} ${msel?'msel':''} ${b.status==='needs-review'?'warn':''} ${b.status==='conflict'?'conflict':''}"
              id="bi-${b.id}" onclick="selectBlock('${b.id}')">
             <div class="block-head">
+                <input type="checkbox" class="blk-chk" title="Выбрать для объединения"
+                       ${msel?'checked':''} onclick="toggleChk('${b.id}',event)">
                 <span class="badge ${badgeCls(b.type)}">${typeLabel(b.type)}</span>
                 ${b.status==='needs-review'?'<span class="needs-badge">⚠ Проверить</span>':''}
                 <span class="conf ${confCls(b.confidence)} ml-auto"
@@ -1357,6 +1397,110 @@ function closeEditor() {
     S.selId = null;
     document.querySelectorAll('.block-item').forEach(el => el.classList.remove('sel'));
     document.getElementById('editorPanel').classList.add('hidden');
+}
+
+// ──────────────────────────────────────────────
+// MULTI-SELECT & MERGE
+// ──────────────────────────────────────────────
+
+function toggleChk(id, e) {
+    e.stopPropagation(); // don't fire selectBlock
+    if (S.multiSel.has(id)) {
+        S.multiSel.delete(id);
+    } else {
+        S.multiSel.add(id);
+    }
+    // Update just this block's visual state without full re-render
+    const el = document.getElementById('bi-' + id);
+    if (el) {
+        el.classList.toggle('msel', S.multiSel.has(id));
+        const chk = el.querySelector('.blk-chk');
+        if (chk) chk.checked = S.multiSel.has(id);
+    }
+    updateMergeBar();
+}
+
+function updateMergeBar() {
+    const n = S.multiSel.size;
+    const bar = document.getElementById('mergeBar');
+    bar.classList.toggle('hidden', n < 2);
+    document.getElementById('mergeCount').textContent =
+        n + ' ' + (n === 1 ? 'блок выбран' : n < 5 ? 'блока выбрано' : 'блоков выбрано');
+}
+
+function clearMultiSel() {
+    S.multiSel.clear();
+    document.querySelectorAll('.block-item.msel').forEach(el => {
+        el.classList.remove('msel');
+        const chk = el.querySelector('.blk-chk');
+        if (chk) chk.checked = false;
+    });
+    updateMergeBar();
+}
+
+function mergeSelected() {
+    if (S.multiSel.size < 2) return;
+
+    // Collect selected blocks in document order
+    const selected = [];
+    for (const sec of S.doc.sections) {
+        for (const b of sec.blocks) {
+            if (S.multiSel.has(b.id)) selected.push({ b, sec });
+        }
+    }
+    if (selected.length < 2) return;
+
+    const first = selected[0];
+
+    // Choose type: keep the "heaviest" semantic type
+    const pri = { warning:4, step:3, 'table-header':2, 'table-row':2, text:1, 'empty-page':0 };
+    const mergedType = selected.reduce((best, x) =>
+        (pri[x.b.type] || 0) > (pri[best] || 0) ? x.b.type : best,
+        first.b.type);
+
+    // H2: first non-empty one
+    const mergedH2 = selected.find(x => x.b.h2)?.b.h2 || '';
+
+    // Body: join all parts; if a non-first block had its own h2, prepend it as text
+    const bodyParts = selected.map((x, i) => {
+        const parts = [];
+        if (i > 0 && x.b.h2) parts.push(x.b.h2);
+        if (x.b.body)         parts.push(x.b.body);
+        return parts.join('\n');
+    }).filter(Boolean);
+
+    const mergedBody = bodyParts.join('\n');
+
+    const merged = {
+        ...first.b,
+        type: mergedType,
+        h2: mergedH2,
+        body: mergedBody,
+        status: 'ok',
+        confidence: 1.0,
+    };
+
+    // Replace first selected block with merged, remove all other selected blocks
+    const selectedIds = S.multiSel;
+    for (const sec of S.doc.sections) {
+        sec.blocks = sec.blocks.reduce((acc, b) => {
+            if (b.id === first.b.id) { acc.push(merged); return acc; }
+            if (selectedIds.has(b.id)) return acc; // drop it
+            acc.push(b);
+            return acc;
+        }, []);
+    }
+
+    const count = selected.length;
+    S.multiSel.clear();
+    S.selId = merged.id;
+
+    renderBlocks();
+    renderTree();
+    selectBlock(merged.id);
+    toast(`Слито ${count} блоков в один`);
+    setTimeout(() => document.getElementById('bi-' + merged.id)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
 }
 
 function findBlock(id) {
