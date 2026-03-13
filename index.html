@@ -594,9 +594,13 @@
 
             <div class="flex items-center justify-between mb-16 flex-wrap gap-8">
                 <div class="page-title" style="margin:0">Редактирование структуры</div>
-                <div class="flex gap-8 items-center">
+                <div class="flex gap-8 items-center flex-wrap">
                     <span id="warnCount" class="hidden"
                           style="background:var(--yellow);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:12px;"></span>
+                    <button class="btn btn-secondary btn-sm" id="btnUndo" onclick="undo()"
+                            disabled title="Отменить (Ctrl+Z)">↩ Отменить</button>
+                    <button class="btn btn-secondary btn-sm" id="btnRedo" onclick="redo()"
+                            disabled title="Повторить (Ctrl+Shift+Z)">↪ Повторить</button>
                     <button class="btn btn-secondary btn-sm" onclick="goTo('upload')">← Загрузка</button>
                     <button class="btn btn-primary btn-sm" onclick="goTo('export')">Экспорт →</button>
                 </div>
@@ -741,6 +745,8 @@ const S = {
     doc: newDoc(),
     selId: null,      // selected block id
     multiSel: new Set(), // multi-selected block ids for merge
+    history: [],     // undo snapshots
+    future:  [],     // redo snapshots
 };
 
 function newDoc() {
@@ -1527,6 +1533,7 @@ function clearMultiSel() {
 
 function mergeSelected() {
     if (S.multiSel.size < 2) return;
+    saveSnapshot();
 
     // Collect selected blocks in document order
     const selected = [];
@@ -1610,6 +1617,7 @@ document.getElementById('btnSaveBlock').addEventListener('click', () => {
     if (!S.selId) return;
     const b = findBlock(S.selId);
     if (!b) return;
+    saveSnapshot();
     b.h2 = document.getElementById('editH2').value.trim();
     b.body = document.getElementById('editBody').value.trim();
     b.type = document.querySelector('.type-btn.on')?.dataset.type || b.type;
@@ -1639,12 +1647,13 @@ document.getElementById('btnDelBlock').addEventListener('click', () => {
     if (!S.selId) return;
     const r = findBlockSec(S.selId);
     if (!r) return;
+    saveSnapshot();
     r.sec.blocks = r.sec.blocks.filter(b => b.id !== S.selId);
     S.selId = null;
     document.getElementById('editorPanel').classList.add('hidden');
     renderBlocks();
     renderTree();
-    toast('Блок удалён');
+    toast('Блок удалён — Ctrl+Z для отмены');
 });
 
 document.getElementById('btnAddSection').addEventListener('click', () => {
@@ -1669,6 +1678,7 @@ function renameSection(id, title) {
 // Called when user picks a block type from the section's type dropdown.
 function demoteSection(id, type) {
     if (type === 'page') return; // "Страница" = keep as section, no-op
+    saveSnapshot();
 
     const secIdx = S.doc.sections.findIndex(s => s.id === id);
     if (secIdx < 0) return;
@@ -1730,9 +1740,11 @@ function addBlock(secId) {
 
 function delSection(id) {
     if (!confirm('Удалить раздел вместе со всеми блоками?')) return;
+    saveSnapshot();
     S.doc.sections = S.doc.sections.filter(s => s.id !== id);
     renderBlocks();
     renderTree();
+    toast('Раздел удалён — Ctrl+Z для отмены');
 }
 
 // ──────────────────────────────────────────────
@@ -1830,6 +1842,59 @@ document.getElementById('btnCopyTxt').addEventListener('click', () => {
         document.execCommand('copy'); document.body.removeChild(ta);
         toast('TXT скопирован');
     }
+});
+
+// ──────────────────────────────────────────────
+// UNDO / REDO
+// ──────────────────────────────────────────────
+const MAX_HISTORY = 30;
+
+function saveSnapshot() {
+    S.history.push(JSON.parse(JSON.stringify(S.doc)));
+    if (S.history.length > MAX_HISTORY) S.history.shift();
+    S.future = []; // new action clears redo stack
+    updateUndoBtns();
+}
+
+function undo() {
+    if (!S.history.length) { toast('Нечего отменять'); return; }
+    S.future.push(JSON.parse(JSON.stringify(S.doc)));
+    S.doc = S.history.pop();
+    S.selId = null;
+    S.multiSel.clear();
+    renderReview();
+    updateUndoBtns();
+    toast('Отменено ↩');
+}
+
+function redo() {
+    if (!S.future.length) { toast('Нечего повторять'); return; }
+    S.history.push(JSON.parse(JSON.stringify(S.doc)));
+    S.doc = S.future.pop();
+    S.selId = null;
+    S.multiSel.clear();
+    renderReview();
+    updateUndoBtns();
+    toast('Повторено ↪');
+}
+
+function updateUndoBtns() {
+    const u = document.getElementById('btnUndo');
+    const r = document.getElementById('btnRedo');
+    if (u) u.disabled = S.history.length === 0;
+    if (r) r.disabled = S.future.length === 0;
+}
+
+// Keyboard shortcuts (skip when typing in inputs)
+document.addEventListener('keydown', e => {
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (document.activeElement?.isContentEditable) return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+
+    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    if (e.key === 'z' &&  e.shiftKey) { e.preventDefault(); redo(); }
+    if (e.key === 'y')                { e.preventDefault(); redo(); }
 });
 
 </script>
